@@ -1,3 +1,4 @@
+# Required libraries
 import os
 import re
 import bs4
@@ -41,12 +42,32 @@ s=Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=s, options=chrome_options)
 
 def filter_urls_by_base_url(urls, base_url):
+    """
+    Filters a list of URLs and returns only those that include the base_url.
+
+    :param urls: List of URLs to filter.
+    :param base_url: Base URL to filter by.
+    :return: List of URLs that include the base_url.
+    """
     return [url for url in urls if base_url in url]
 
 def normalize_url(url):
+    """
+    Normalize a URL by ensuring it ends with '/'.
+
+    :param url: URL to normalize.
+    :return: Normalized URL.
+    """
     return url if url.endswith('/') else url + '/'
 
 def fetch_url_request(url):
+    """
+    Fetches the content of a URL using requests library and returns the response.
+    In case of any exception during fetching, logs the error and returns None.
+
+    :param url: URL to fetch.
+    :return: Response object on successful fetch, None otherwise.
+    """
     try:
         response = SESSION.get(url)
         response.raise_for_status()
@@ -56,16 +77,33 @@ def fetch_url_request(url):
         return None
 
 def fetch_url_selenium(url):
+    """
+    Fetches the content of a URL using Selenium and returns the source HTML of the page.
+    In case of any exception during fetching, logs the error and returns None.
+
+    :param url: URL to fetch.
+    :return: HTML source as a string on successful fetch, None otherwise.
+    """
     try:
         driver.get(url)
         driver.implicitly_wait(7)
         time.sleep(7)
         return driver.page_source
+    
     except RequestException as e:
         logger.error(f"Error fetching {url}: {e}")
         return None
 
 def process_url(response, visited, base_url):
+    """
+    Process a URL response. Extract all absolute URLs from the response that 
+    haven't been visited yet and belong to the same base_url.
+
+    :param response: Response object from a URL fetch.
+    :param visited: Set of URLs already visited.
+    :param base_url: Base URL to filter by.
+    :return: Set of new URLs to visit.
+    """
     urls = set()
     if response:
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -79,6 +117,13 @@ def process_url(response, visited, base_url):
     return urls
 
 def get_all_suburls(url, visited=None):
+    """
+    Get all sub-URLs of a given URL that belong to the same domain.
+
+    :param url: Base URL to start the search.
+    :param visited: Set of URLs already visited.
+    :return: Set of all sub-URLs.
+    """
     if visited is None:
         visited = set()
 
@@ -104,6 +149,13 @@ def get_all_suburls(url, visited=None):
     return urls
 
 def process_tag(tag):
+    """
+    Process an HTML tag. If the tag is a table, convert it to Markdown. 
+    Otherwise, convert it to Markdown as-is.
+
+    :param tag: HTML tag to process.
+    :return: Markdown representation of the tag.
+    """
     if tag.name == 'table':
         # Convert the table to a DataFrame
         df = pd.read_html(str(tag))[0]
@@ -116,9 +168,21 @@ def process_tag(tag):
         return html2text.html2text(html)
 
 def fix_markdown_links(markdown_text):
+    """
+    Fix Markdown links by removing any spaces in the URL.
+
+    :param markdown_text: Markdown text to process.
+    :return: Fixed Markdown text.
+    """
     return re.sub(r'\[([^\]]+)\]\(([^)]+)\s+([^)]+)\)', r'[\1](\2\3)', markdown_text)
 
 def process_nested_tags(tag):
+    """
+    Process nested HTML tags. Convert tags to Markdown recursively.
+
+    :param tag: Root HTML tag to process.
+    :return: Markdown text
+    """
     if tag.name in {'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'pre', 'table', 'ol', 'ul'}:
         return process_tag(tag)
     else:
@@ -145,6 +209,13 @@ def process_nested_tags(tag):
 #         return parse_from_soup(soup)
 
 def parse(url):
+    """
+    Fetches and parses a URL using Selenium and BeautifulSoup. 
+    Extracts the useful information from the HTML and returns it.
+
+    :param url: URL to fetch and parse.
+    :return: Processed content from the URL if it exists, None otherwise.
+    """
     # Fetch the page with Selenium
     html = fetch_url_selenium(url)
     
@@ -158,6 +229,13 @@ def parse(url):
 
 
 def parse_from_soup(soup):
+    """
+    Parses the soup object from BeautifulSoup, removes unnecessary tags,
+    and returns the content in markdown format.
+
+    :param soup: BeautifulSoup object
+    :return: Content from the soup in markdown format.
+    """
     grid_main = soup.find('div', {'id': 'grid-main'})
 
     if grid_main:
@@ -174,6 +252,12 @@ def parse_from_soup(soup):
         logger.error('Failed to find the "grid-main" div.')
 
 def remove_duplicates(doc_list):
+    """
+    Removes duplicate documents from a list of Documents based on page_content.
+
+    :param doc_list: List of Document objects.
+    :return: List of unique Document objects.
+    """
     content_to_doc = {}
     for doc in doc_list:
         if doc.page_content not in content_to_doc:
@@ -181,6 +265,12 @@ def remove_duplicates(doc_list):
     return list(content_to_doc.values())
 
 def insert_full_url(text):
+    """
+    Inserts the full URL into Markdown links in the text.
+
+    :param text: Text to process.
+    :return: Text with full URLs in Markdown links.
+    """
     base_url = 'https://docs.chain.link'
     def replacer(match):
         sub_url = match.group(2)
@@ -195,6 +285,12 @@ def insert_full_url(text):
     return re.sub(r'\[(.*?)\]\((.*?)\)', replacer, text)
 
 def refine_docs(docs:List[Document]):
+    """
+    Removes duplicates and inserts full URLs into the page_content of the Document objects.
+
+    :param docs: List of Document objects.
+    :return: Refined list of Document objects.
+    """
     docs_filtered = remove_duplicates(docs)
     base_url = 'https://docs.chain.link'
     for doc in docs_filtered:
@@ -204,8 +300,6 @@ def refine_docs(docs:List[Document]):
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
-
-    logger.info(os.getenv(key="OPENAI_API_KEY"))
 
     all_urls = get_all_suburls("https://docs.chain.link/")
     all_urls = sorted(list(set(all_urls)))

@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: algovate
+Version: 0.0.1
+Summary: Automating the evaluation of retrieval QandA
+Home-page: https://github.com/algoveraai/algovate
+Requires-Python: >=3.6
+
+# algovate

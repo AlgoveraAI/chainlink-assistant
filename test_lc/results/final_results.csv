@@ -1,0 +1,15 @@
+experiment_name,grading_type,splitter,chunk_size,chunk_overlap,search_type,k,score_threshold,model_name,chain_type,num_ground_truths,num_correct,num_retrieval_correct,num_incorrect,num_retrieval_incorrect,accuracy,retrieval_accuracy
+experiment_2,fast,<class 'langchain.text_splitter.RecursiveCharacterTextSplitter'>,1500,50,similarity,4,0.5,gpt-3.5-turbo,stuff,27,22,0,5,27,0.814814815,0
+experiment_6,fast,<class 'langchain.text_splitter.RecursiveCharacterTextSplitter'>,1500,50,knn,4,0.5,gpt-3.5-turbo,stuff,27,22,0,5,27,0.814814815,0
+experiment_3,fast,<class 'langchain.text_splitter.RecursiveCharacterTextSplitter'>,1500,50,similarity,5,0.5,gpt-3.5-turbo,stuff,27,20,0,7,27,0.740740741,0
+experiment_4,fast,<class 'langchain.text_splitter.RecursiveCharacterTextSplitter'>,1500,50,mmr,4,0.5,gpt-3.5-turbo,stuff,27,20,0,7,27,0.740740741,0
+experiment_13,fast,<class 'langchain.text_splitter.TokenTextSplitter'>,1500,50,knn,4,0.5,gpt-3.5-turbo,stuff,27,20,0,7,27,0.740740741,0
+experiment_1,fast,<class 'langchain.text_splitter.RecursiveCharacterTextSplitter'>,1500,50,similarity,3,0.5,gpt-3.5-turbo,stuff,27,19,0,8,27,0.703703704,0
+experiment_7,fast,<class 'langchain.text_splitter.RecursiveCharacterTextSplitter'>,1500,50,tfidf,4,0.5,gpt-3.5-turbo,stuff,27,19,0,8,27,0.703703704,0
+experiment_8,fast,<class 'langchain.text_splitter.TokenTextSplitter'>,1500,50,similarity,3,0.5,gpt-3.5-turbo,stuff,27,19,0,8,27,0.703703704,0
+experiment_9,fast,<class 'langchain.text_splitter.TokenTextSplitter'>,1500,50,similarity,4,0.5,gpt-3.5-turbo,stuff,27,19,0,8,27,0.703703704,0
+experiment_5,fast,<class 'langchain.text_splitter.RecursiveCharacterTextSplitter'>,1500,50,svm,4,0.5,gpt-3.5-turbo,stuff,27,17,0,10,27,0.62962963,0
+experiment_14,fast,<class 'langchain.text_splitter.TokenTextSplitter'>,1500,50,tfidf,4,0.5,gpt-3.5-turbo,stuff,27,17,0,10,27,0.62962963,0
+experiment_11,fast,<class 'langchain.text_splitter.TokenTextSplitter'>,1500,50,mmr,4,0.5,gpt-3.5-turbo,stuff,27,15,0,12,27,0.555555556,0
+experiment_12,fast,<class 'langchain.text_splitter.TokenTextSplitter'>,1500,50,svm,4,0.5,gpt-3.5-turbo,stuff,27,14,0,13,27,0.518518519,0
+experiment_10,fast,<class 'langchain.text_splitter.TokenTextSplitter'>,1500,50,similarity,5,0.5,gpt-3.5-turbo,stuff,27,9,0,18,27,0.333333333,0
