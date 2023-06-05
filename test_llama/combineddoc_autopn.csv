@@ -1,5 +1,5 @@
-,question,answer,result,retrieved_docs
-0,give me a sample solidity contract to use Chainlink price feeds?,"// SPDX-License-Identifier: MIT
+question,answer,result,retrieved_docs,right_or_wrong,rd_right_or_wrong
+give me a sample solidity contract to use Chainlink price feeds?,"// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
 import ""@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol"";
@@ -166,8 +166,8 @@ how.
   * [ Edit this page ](https://github.com/smartcontractkit/documentation/tree/main/src/pages/getting-started/consuming-data-feeds.mdx)
   * [ Join our community ](https://discord.com/invite/aSK4zew)
 
-"
-1,give me a sample solidity contract to use Chainlink VRF?,"// SPDX-License-Identifier: MIT
+",right,
+give me a sample solidity contract to use Chainlink VRF?,"// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
 import ""@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol"";
@@ -451,8 +451,8 @@ In this example, the consuming contract uses static configuration parameters.
     pragma solidity ^0.8.7;
     
     import ""@chainlink/contracts/src/v0.8/ConfirmedOwner.sol"";
-    import"
-2,give me a sample solidity contract to use NFT Floor Price Feeds?,"// SPDX-License-Identifier: MIT
+    import",partial,partial
+give me a sample solidity contract to use NFT Floor Price Feeds?,"// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
 import ""@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol"";
@@ -608,8 +608,8 @@ how.
   * [ Edit this page ](https://github.com/smartcontractkit/documentation/tree/main/src/pages/data-feeds/using-data-feeds.mdx)
   * [ Join our community ](https://discord.com/invite/aSK4zew)
 
-"
-3,give me a sample solidity contract to use Proof of Reserve Feeds?,"// SPDX-License-Identifier: MIT
+",partial,wrong
+give me a sample solidity contract to use Proof of Reserve Feeds?,"// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
 import ""@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol"";
@@ -766,8 +766,8 @@ Learn more about making responsible data quality decisions.
   * [ Edit this page ](https://github.com/smartcontractkit/documentation/tree/main/src/pages/data-feeds/proof-of-reserve/index.mdx)
   * [ Join our community ](https://discord.com/invite/aSK4zew)
 
-"
-4,Give sample code for an example contract that obtains the latest price answer from the BTC / USD feed on the Sepolia testnet?,"// SPDX-License-Identifier: MIT
+",partial,right
+Give sample code for an example contract that obtains the latest price answer from the BTC / USD feed on the Sepolia testnet?,"// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
 import ""@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol"";
@@ -920,8 +920,8 @@ Remix](https://remix.ethereum.org/#url=https://docs.chain.link/samples/PriceFeed
 
   4. On the **Deploy** tab, select the **Injected Provider** environment. This contract specifically requires Web3 because it connects with another contract on the blockchain. Running in a JavaScript VM will not work.
 
-  5. Because the example contract has several imports, Remix might select another contract to deploy by default. In the **Contract** section, select the `PriceConsumerV3` contract to make sure that Remix deploys the correct"
-5,Give code examples to demonstrate how to deploy a consumer contract on-chain that reads a data feed and stores the value?,"// SPDX-License-Identifier: MIT
+  5. Because the example contract has several imports, Remix might select another contract to deploy by default. In the **Contract** section, select the `PriceConsumerV3` contract to make sure that Remix deploys the correct",right,
+Give code examples to demonstrate how to deploy a consumer contract on-chain that reads a data feed and stores the value?,"// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
 import ""@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol"";
@@ -1119,8 +1119,8 @@ modify it to read any of the different [Types of Data Feeds](/data-feeds#types-o
 
 The contract has the following components:
 
-  * The `import` line imports an interface named `AggregatorV3Interface`. Interfaces define functions without their implementation, which leaves inheriting contracts to define the actual implementation themselves. In this case, `AggregatorV3Interface` defines that all v3 Aggregators have the function `latestRoundData`. You can [see the complete"
-6,Write code to show how to use web3.js to retrieve feed data from a price feed?,"/**
+  * The `import` line imports an interface named `AggregatorV3Interface`. Interfaces define functions without their implementation, which leaves inheriting contracts to define the actual implementation themselves. In this case, `AggregatorV3Interface` defines that all v3 Aggregators have the function `latestRoundData`. You can [see the complete",partial,right
+Write code to show how to use web3.js to retrieve feed data from a price feed?,"/**
  * THIS IS EXAMPLE CODE THAT USES HARDCODED VALUES FOR CLARITY.
  * THIS IS EXAMPLE CODE THAT USES UN-AUDITED CODE.
  * DO NOT USE THIS CODE IN PRODUCTION.
@@ -1321,8 +1321,8 @@ on the Sepolia testnet.
      */
     
     const Web3 = require(""web3"") // for nodejs only
-   "
-7,What is the LINK token contract on ethereum mainnet?,0x514910771AF9Ca656af840dff83E8264EcF986CA,"
+   ",partial,partial
+What is the LINK token contract on ethereum mainnet?,0x514910771AF9Ca656af840dff83E8264EcF986CA,"
 The LINK token contract on Ethereum mainnet is located at address 0x514910771AF9Ca656af840dff83E8264EcF986CA. It has a name of ""Chainlink Token"", a symbol of ""LINK"", and 18 decimals. The network status is ethstats.dev.","# LINK Token Contracts
 
   * Overview
@@ -1437,8 +1437,8 @@ Goerli to BASE Goerli.
   * [ Edit this page ](https://github.com/smartcontractkit/documentation/tree/main/src/pages/resources/link-token-contracts.mdx)
   * [ Join our community ](https://discord.com/invite/aSK4zew)
 
-"
-8,What is the chainlink price feed address for 1INCH / ETH?,0x72AFAECF99C9d9C8215fF44C77B94B99C28741e8,ERROR,"        |
+",right,
+What is the chainlink price feed address for 1INCH / ETH?,0x72AFAECF99C9d9C8215fF44C77B94B99C28741e8,ERROR,"        |
 |:---------------------------------------|:---------------------------------------------------------|:---------------|:------------|:------------|------:|:-------------------------------------------|
 | 🟢1INCH / ETH                          | 1inch                                                    | Crypto         | 2%          | 86400s      |    18 | 0x72AFAECF99C9d9C8215fF44C77B94B99C28741e8 |
 | 🟢1INCH / USD                          | 1inch                                                    | Crypto         | 1%          | 86400s      |     8 | 0xc929ad75B72593967DE83E7F7Cda0493458261D9 |
@@ -1456,8 +1456,8 @@ Goerli to BASE Goerli.
 | 🟢ETH / USD                            | Ethereum                                                 | Crypto         | 0.5%        | 3600s       |     8 | 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419 |
 | 🟢EUR / USD                            | Euro                                                     | Forex          | 0.15%       | 86400s      |     8 | 0xb49f677943BC038e9857d61E7d053CaA2C1734C1 |
 | 🟢EURT / USD                           | Tether Euro                                              | Crypto         | 2%          | 86400s      |     8 | 0x01D391A48f4F7339aC64CA2c83a07C22F95F587a |
-| 🟢FARM / ETH                           | Harvest Finance                                          | Crypto         | 2%          | 86400s      |    18 |"
-9,What is the proof of reserve address for CacheGold PoR USD on Goerli Testnet?,Not provided in the context,ERROR,"                                                                                |
+| 🟢FARM / ETH                           | Harvest Finance                                          | Crypto         | 2%          | 86400s      |    18 |",wrong,right
+What is the proof of reserve address for CacheGold PoR USD on Goerli Testnet?,Not provided in the context,ERROR,"                                                                                |
 |:-------------------------------------------|:------------|------------:|------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 🔵CacheGold PoR USD                        | 0.1%        |       86400 |     8 | 0x5586bF404C7A22A4a4077401272cE5945f80189CAsset name:Gold in grams (g)Reserve type:Off-chainData source:GramChainAttestation:Custodian API                      |
 | ⭕EURS RESERVESDeprecating: May 10th, 2023 | 10%         |      432000 |     8 | 0xbcD05A3E0c11f340cCcD9a4Efe05eEB2b33AB67AAsset name:Euro (EUR)Reserve type:Off-chainData source:SelfAttestation:Self-attested                                  |
@@ -1478,8 +1478,8 @@ Address Manager                       |
 | 🔵eFIL PoR                                 | 2%          |      432000 |    18 | 0x8917800a6BDd8fA8b7c94E25aE2219Db28050622Asset name:Wrapped FilecoinReserve type:Cross-chainData source:Cross-chainAttestation:Wallet address                  |
 ## Goerli Testnet
 
-| Proof of Reserve Feed   | Deviation   |   Heartbeat |   Dec | Address and Info                                                                                                                        "
-10,What is the rate and Volatility Feed Address for 30-Day ETH APR?,0xceA6Aa74E6A86a7f85B571Ce1C34f1A60B77CD29,"
+| Proof of Reserve Feed   | Deviation   |   Heartbeat |   Dec | Address and Info                                                                                                                        ",wrong,right
+What is the rate and Volatility Feed Address for 30-Day ETH APR?,0xceA6Aa74E6A86a7f85B571Ce1C34f1A60B77CD29,"
 0x8e604308BD61d975bc6aE7903747785Db7dE97e2","# Rate and Volatility Feeds
 
   * Overview
@@ -1575,8 +1575,8 @@ decisions.](/data-feeds/selecting-data-feeds)
   * [ Edit this page ](https://github.com/smartcontractkit/documentation/tree/main/src/pages/data-feeds/rates-feeds/addresses.mdx)
   * [ Join our community ](https://discord.com/invite/aSK4zew)
 
-"
-11,What is the NFT floor price address for Bored Ape Yacht Club Floor Price / ETH on ethereum main net?,0x352f2Bc3039429fC2fe62004a1575aE74001CfcE,"
+",wrong,wrong
+What is the NFT floor price address for Bored Ape Yacht Club Floor Price / ETH on ethereum main net?,0x352f2Bc3039429fC2fe62004a1575aE74001CfcE,"
 0x352f2Bc3039429fC2fe62004a1575aE74001CfcE","  |       86400 |    18 | 0xA97477aB5ab6ED2f6A2B5Cbe59D71e88ad334b90 |
 | ⚫Bored Ape Yacht Club Floor Price / ETH | ETH           | 2%          |       86400 |    18 | 0x352f2Bc3039429fC2fe62004a1575aE74001CfcE |
 | ⚫CloneX Floor Price                     | ETH           | 2%          |       86400 |    18 | 0x021264d59DAbD26E7506Ee7278407891Bb8CDCCc |
@@ -1627,8 +1627,8 @@ Track the status of this network at <https://ethstats.dev/>
 | ⚫Azuki Floor Price / ETH                | ETH           | 2%          |       86400 |    18 | 0xA8B9A447C73191744D5B79BcE864F343455E1150 |
 | ⚫BEANZ Official Floor Price             | ETH           | 2%          |       86400 |    18 | 0xA97477aB5ab6ED2f6A2B5Cbe59D71e88ad334b90 |
 | ⚫Bored Ape Yacht Club Floor Price / ETH | ETH           | 2%          |       86400 |    18 | 0x352f2Bc3039429fC2fe62004a1575aE74001CfcE |
-| ⚫CloneX Floor Price                     | ETH           | 2%          |       86400 |    18 |"
-12,What is Chainlink?,"Chainlink is a decentralized oracle network that enables smart contracts on Ethereum to securely connect to external data sources, APIs, and payment systems.
+| ⚫CloneX Floor Price                     | ETH           | 2%          |       86400 |    18 |",right,
+What is Chainlink?,"Chainlink is a decentralized oracle network that enables smart contracts on Ethereum to securely connect to external data sources, APIs, and payment systems.
 
 Smart contracts are self-executing contracts with the terms of the agreement directly written into code. They're hosted on blockchain platforms, like Ethereum, and provide many advantages such as trustless execution, efficiency, and transparency. However, one limitation of smart contracts is that they cannot access off-chain data (data outside of the blockchain) directly due to the blockchain's deterministic nature.
 
@@ -1651,8 +1651,8 @@ Chainlink is a platform for creating decentralized oracle networks that provide 
 Whether it’s companies like EY and Microsoft looking to use smart contracts to improve their business processes, artists and athletes like LaMelo Ball creating their own “NFTs,” or up and coming companies looking to disrupt long-standing establishments such as the insurance industry, Chainlink and smart contracts are working to become the backbone for world-changing applications.
 
  
-"
-13,What is a runlog initiator in chainlink?,"The RunLog initiator is an integral component of the Chainlink Node job specifications. It is specifically designed to listen for Ethereum log events (in this case, the Chainlink-specific event ""RunRequest"") that are emitted by the Chainlink Oracle contract when someone requests data from a Chainlink Node.
+",right,
+What is a runlog initiator in chainlink?,"The RunLog initiator is an integral component of the Chainlink Node job specifications. It is specifically designed to listen for Ethereum log events (in this case, the Chainlink-specific event ""RunRequest"") that are emitted by the Chainlink Oracle contract when someone requests data from a Chainlink Node.
 
 This initiator responds to requests for external data made by smart contracts on the Ethereum blockchain. When a smart contract emits a RunRequest event, this is picked up by the RunLog initiator, which then triggers a job run on the Chainlink node.
 
@@ -1791,8 +1791,8 @@ from an address within the array.
 
 ## Web
 
-The `Web` initiator enables jobs"
-14,What are Chainlink data feeds?,"Chainlink Price Feeds, often just called Chainlink data feeds, are decentralized oracle networks that provide smart contracts with access to high-quality, tamper-proof data.
+The `Web` initiator enables jobs",right,
+What are Chainlink data feeds?,"Chainlink Price Feeds, often just called Chainlink data feeds, are decentralized oracle networks that provide smart contracts with access to high-quality, tamper-proof data.
 
 These data feeds are primarily used to provide real-time price information for various cryptocurrencies, commodities, and other assets. They allow smart contracts to access the current market price of assets without having to interact with external APIs themselves, thus enhancing security, reliability, and transparency.
 
@@ -1900,8 +1900,8 @@ feed categories and how to identify them.
   * [ Edit this page ](https://github.com/smartcontractkit/documentation/tree/main/src/pages/data-feeds/price-feeds/index.mdx)
   * [ Join our community ](https://discord.com/invite/aSK4zew)
 
-"
-15,What is a Chainlink subscription account?,An account that holds LINK tokens and makes them available to fund requests to Chainlink VRF v2 coordinators.,"
+",right,
+What is a Chainlink subscription account?,An account that holds LINK tokens and makes them available to fund requests to Chainlink VRF v2 coordinators.,"
 A Chainlink subscription account is an account that creates and manages a Subscription account. Any account can add LINK tokens to the subscription balance, but only the owner can add approved consuming contracts or withdraw funds. The Subscription balance is the amount of LINK maintained on the account, the Subscription reservation is the amount of LINK blocked on the balance, and the Effective balance is the amount of LINK available on the account. Subscription consumers are consumer contracts that are approved to use funding from the account while making Chainlink Functions requests.","address that creates and manages a _Subscription account_. Any account can add LINK tokens to the subscription balance, but only the owner can add approved consuming contracts or withdraw funds.
   * Subscription balance: The amount of LINK maintained on your _Subscription account_. Requests from consumer contracts will continue to be funded until the balance runs out, so be sure to maintain sufficient funds in your _Subscription balance_ to pay for the requests and keep your applications running.
   * Subscription reservation: The amount of LINK blocked on the _Subscription balance_. It corresponds to the total LINK amount to be paid by in-flight requests.
@@ -2000,8 +2000,8 @@ Example:
     Created subscription with ID: 28
     Owner: 0x9d087fC03ae39b088326b67fA3C788236645b717
     Balance: 0.5 LINK
-    0"
-16,How can i request data from a public API in a smart contract using chainlink?,"Here are the general steps to request data from a public API using Chainlink within a smart contract:
+    0",right,
+How can i request data from a public API in a smart contract using chainlink?,"Here are the general steps to request data from a public API using Chainlink within a smart contract:
 
 Install Chainlink: First, you need to have Chainlink installed and properly configured. This would typically involve running a Chainlink Node or using nodes provided by others.
 
@@ -2126,8 +2126,8 @@ trading volume from the response.
         }
     
         /**
-      "
-17,What is an adapter in chainlink?,"Core adapters are the built-in functionality that every Chainlink node supports. Strung together, they act as tasks that need to be performed to complete a Job.
+      ",right,
+What is an adapter in chainlink?,"Core adapters are the built-in functionality that every Chainlink node supports. Strung together, they act as tasks that need to be performed to complete a Job.
 
 Adapters that are prefixed with ""Eth"" refer to tasks that post data onto the chain.","
 An adapter in Chainlink is a service that enables the core of the Chainlink node to communicate with external APIs via a simple JSON specification. Adapters are used to integrate custom computations and specialized APIs into the Chainlink node.","# External Adapters Introduction
@@ -2188,8 +2188,8 @@ Blockchain Integration With Chainlink External Adapters                   | Iden
 
 ### Coding bootcamps
 
-  *"
-18,What is a task in chainlink?,"In the Chainlink ecosystem, a ""task"" refers to a specific action or a series of actions that a Chainlink node performs as part of a job.
+  *",right,
+What is a task in chainlink?,"In the Chainlink ecosystem, a ""task"" refers to a specific action or a series of actions that a Chainlink node performs as part of a job.
 
 A job in Chainlink is defined by a Job Specification, which is a list of tasks that the Chainlink node is to perform. These tasks can range from fetching data from an API endpoint, parsing JSON data, performing computations, or even making a transaction on the blockchain.
 
@@ -2280,8 +2280,8 @@ tasks can have multiple inputs, such as `median`. Other tasks are limited to 0
 :::NEXT DOC:::
 
 Smart contracts have special properties and need decentralized oracles to carry out functions. This is where Chainlink comes in. Chainlink is a platform for creating decentralized oracle networks that provide various smart contract services. So using Chainlink, we can create a price oracle that isn’t just Jim but Jim and 30 other of the most trusted and expert crypto price data aggregators out there and make them come to an agreement.
-"
-19,What is The request and receive cycle in chainlink?,"The request and receive cycle in Chainlink describes the process of how a smart contract requests data from an off-chain source and receives the result. This cycle is facilitated by Chainlink nodes and involves several steps:
+",right,
+What is The request and receive cycle in chainlink?,"The request and receive cycle in Chainlink describes the process of how a smart contract requests data from an off-chain source and receives the result. This cycle is facilitated by Chainlink nodes and involves several steps:
 
 Request: A smart contract makes a data request to a Chainlink node. This request is typically encoded in a function call and includes the specific data being requested, and a callback function in the smart contract to receive the data. The contract also sends LINK tokens to the Chainlink node to pay for the data request.
 
@@ -2364,8 +2364,8 @@ contract, it would need a job containing the following Tasks:
 :::NEXT DOC:::
 
 Just like all Chainlink powered services, we must pay the Chainlink VRF for the work completed by using the LINK token. In the past, in version one of Chainlink VRF, this involved sending a set amount of LINK tokens alongside each request. And because a contract itself sends out the requests, this meant that smart contracts had to be sent LINK before they could request a random number.
-"
-20,What are jobs in Chainlink?,"In the Chainlink ecosystem, a ""job"" refers to a specific series of tasks that a Chainlink node is assigned to perform. Each job is defined by a Job Specification, which is written in JSON format and details the specific tasks a node should complete.
+",right,
+What are jobs in Chainlink?,"In the Chainlink ecosystem, a ""job"" refers to a specific series of tasks that a Chainlink node is assigned to perform. Each job is defined by a Job Specification, which is written in JSON format and details the specific tasks a node should complete.
 
 Chainlink jobs are generally used to fetch data from an off-chain API, perform certain operations on the data, and then deliver the data to a smart contract on the blockchain.
 
@@ -2458,8 +2458,8 @@ page](https://chain.link/community/grants).
 :::NEXT DOC:::
 
 Smart contracts have special properties and need decentralized oracles to carry out functions. This is where Chainlink comes in. Chainlink is a platform for creating decentralized oracle networks that provide various smart contract services. So using Chainlink, we can create a price oracle that isn’t just Jim but Jim and 30 other of the most trusted and expert crypto price data aggregators out there and make them come to an agreement.
-"
-21,How can i Acquire testnet LINK from Chainlink?,"you can acquire testnet LINK tokens for Chainlink development from faucets specific to each testnet. Here are the general steps:
+",wrong,wrong
+How can i Acquire testnet LINK from Chainlink?,"you can acquire testnet LINK tokens for Chainlink development from faucets specific to each testnet. Here are the general steps:
 
 Setup a Wallet: If you don't have one already, set up a Metamask or other Ethereum-compatible wallet. Make sure it's configured to connect to the appropriate Ethereum testnet (like Kovan, Rinkeby, or Ropsten).
 
@@ -2560,8 +2560,8 @@ LINK to Moonriver mainnet.
 | Parameter      | Value                                      |
 |:---------------|:-------------------------------------------|
 | ETH_CHAIN_ID   | 1285                                       |
-| Address        |"
-22,What is the decentralized data model in Chainlink?,"The decentralized data model in Chainlink refers to its approach of using multiple independent nodes to provide data to smart contracts. This is in contrast to a centralized model, where a single entity or server provides the data.
+| Address        |",right,
+What is the decentralized data model in Chainlink?,"The decentralized data model in Chainlink refers to its approach of using multiple independent nodes to provide data to smart contracts. This is in contrast to a centralized model, where a single entity or server provides the data.
 
 In Chainlink's decentralized model, multiple independent, Sybil-resistant oracle nodes fetch data from various high-quality data sources. This approach has several advantages:
 
@@ -2627,8 +2627,8 @@ Reporting](/architecture-overview/off-chain-reporting) page.
 :::NEXT DOC:::
 
 Smart contracts have special properties and need decentralized oracles to carry out functions. This is where Chainlink comes in. Chainlink is a platform for creating decentralized oracle networks that provide various smart contract services. So using Chainlink, we can create a price oracle that isn’t just Jim but Jim and 30 other of the most trusted and expert crypto price data aggregators out there and make them come to an agreement.
-"
-23,What data types are available for Rate and Volatility Feeds on Chainlink?,"The following data types are available:
+",right,
+What data types are available for Rate and Volatility Feeds on Chainlink?,"The following data types are available:
 
 Bitcoin Interest Rate Curve
 ETH Staking APR
@@ -2738,8 +2738,8 @@ form](https://forms.gle/Jc1MGY5ry1ceYH1X6).
   * [ Edit this page ](https://github.com/smartcontractkit/documentation/tree/main/src/pages/data-feeds/rates-feeds/index.mdx)
   * [ Join our community ](https://discord.com/invite/aSK4zew)
 
-"
-24,What is a Chainlink NFT Floor Price Feed?,"Chainlink NFT Floor Price Feeds provide a conservative and risk averse floor price estimate for an NFT collection. These feeds operate the same way as other Chainlink Data Feeds. NFT Floor Price Feeds are supported by Coinbase Cloud's aggregation algorithm and Chainlink’s oracle infrastructure to help eliminate extreme price outliers and make these feeds resistant to market manipulation. You can use NFT Floor Price Feeds for use cases that rely on high-quality NFT data, including lending and borrowing, on-chain derivatives, dynamic NFTs, gaming guilds, CeFi products, prediction markets, and more.","
+",right,
+What is a Chainlink NFT Floor Price Feed?,"Chainlink NFT Floor Price Feeds provide a conservative and risk averse floor price estimate for an NFT collection. These feeds operate the same way as other Chainlink Data Feeds. NFT Floor Price Feeds are supported by Coinbase Cloud's aggregation algorithm and Chainlink’s oracle infrastructure to help eliminate extreme price outliers and make these feeds resistant to market manipulation. You can use NFT Floor Price Feeds for use cases that rely on high-quality NFT data, including lending and borrowing, on-chain derivatives, dynamic NFTs, gaming guilds, CeFi products, prediction markets, and more.","
 A Chainlink NFT Floor Price Feed is a conservative and risk averse floor price estimate for an NFT collection. These feeds use Coinbase Cloud's aggregation algorithm and Chainlink's oracle infrastructure to help eliminate extreme price outliers and make these feeds resistant to market manipulation. They can be used for use cases that rely on high-quality NFT data, including lending and borrowing, on-chain derivatives, dynamic NFTs, gaming guilds, CeFi products, prediction markets, and more.","# NFT Floor Price Feeds
 
   * Overview
@@ -2840,8 +2840,8 @@ Track the status of this network at <https://ethstats.dev/>
 | ⚫Azuki Floor Price / ETH                | ETH           | 2%          |       86400 |    18 | 0xA8B9A447C73191744D5B79BcE864F343455E1150 |
 | ⚫BEANZ Official Floor Price             | ETH           | 2%          |       86400 |    18 | 0xA97477aB5ab6ED2f6A2B5Cbe59D71e88ad334b90 |
 | ⚫Bored Ape Yacht Club Floor Price / ETH | ETH           | 2%          |       86400 |    18 | 0x352f2Bc3039429fC2fe62004a1575aE74001CfcE |
-| ⚫CloneX Floor Price                     | ETH           | 2%          |       86400 |    18 |"
-25,How can I Select Quality Data Feeds on Chainlink?,"Selecting quality data feeds on Chainlink involves evaluating several factors. Here are some of the key considerations:
+| ⚫CloneX Floor Price                     | ETH           | 2%          |       86400 |    18 |",right,
+How can I Select Quality Data Feeds on Chainlink?,"Selecting quality data feeds on Chainlink involves evaluating several factors. Here are some of the key considerations:
 
 Number of Nodes: More nodes contributing to a data feed generally means greater decentralization and higher resistance to manipulation.
 
@@ -2970,8 +2970,8 @@ feed categories and how to identify them.
   * [ Edit this page ](https://github.com/smartcontractkit/documentation/tree/main/src/pages/data-feeds/price-feeds/index.mdx)
   * [ Join our community ](https://discord.com/invite/aSK4zew)
 
-"
-26,What are verified feeds on Chainlink?,"These are data feeds that follow a standardized data feeds workflow. Chainlink node operators each query several sources for the market price and aggregate the estimates provided by those sources.
+",right,
+What are verified feeds on Chainlink?,"These are data feeds that follow a standardized data feeds workflow. Chainlink node operators each query several sources for the market price and aggregate the estimates provided by those sources.
 
 Verified feeds have the following characteristics:
 
@@ -3141,4 +3141,4 @@ users with deep expertise in the market space they operate in.
 
 These feeds are monitored and well-supported, but they might not meet the same
 levels of resiliency as the above categories. We strongly advise you to [speak
-with the Chainlink Labs"
+with the Chainlink Labs",right,
