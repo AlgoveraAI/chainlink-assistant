@@ -48,14 +48,15 @@ class AutoQ:
         # generate question
         qa = self.chain.run(chunk)
         qa[0]["metadata"] = metadata
-        self.pairs.append(qa)
+        self.pairs.append(qa[0])
 
     def generate_eval_pairs(self, 
         num_pairs:int=10, 
         chunk_size:int=3000
     ):
         self.logger.info(f"Generating {num_pairs} pairs")
-        for i in range(num_pairs):
+        count = 0
+        while count < num_pairs:
             # randomly sample a chunk
             sample_int = random.randint(0, len(self.document_store)-1)
             sample_chunk = self.document_store[sample_int].page_content
@@ -69,7 +70,12 @@ class AutoQ:
             else:
                 chunk = sample_chunk
 
-            self.generate_single_pair(chunk=chunk, metadata=metadata)
+            try:
+                self.generate_single_pair(chunk=chunk, metadata=metadata)
+                count += 1
+            except:
+                self.logger.error(f"Error generating pair for chunk {chunk}")
+                continue
 
             # log progress
             self.logger.info(f"Generated {len(self.pairs)} of {num_pairs} pairs")
