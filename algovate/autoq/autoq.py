@@ -36,7 +36,6 @@ class AutoQ:
         self.logger.info("AutoQ initialized")
         self.logger.info(f"Document store has {(self.document_store)}")
 
-
     def generate_single_pair(self, 
         chunk,
         metadata
