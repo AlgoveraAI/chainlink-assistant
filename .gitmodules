@@ -1,4 +1,4 @@
-[submodule "backendfirebase"]
-	path = backendfirebase
+[submodule "chainlink-assistant/backendfirebase"]
+	path = chainlink-assistant/backendfirebase
 	url = git@github.com:AlgoveraAI/backendfirebase.git
 	branch = main

@@ -1,9 +1,0 @@
-README.md
-setup.py
-algovate/__init__.py
-algovate/prompts.py
-algovate/utils.py
-algovate.egg-info/PKG-INFO
-algovate.egg-info/SOURCES.txt
-algovate.egg-info/dependency_links.txt
-algovate.egg-info/top_level.txt

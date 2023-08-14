@@ -1,3 +1,0 @@
-experiment_name,grading_type,splitter,chunk_size,chunk_overlap,search_type,k,score_threshold,model_name,chain_type,num_ground_truths,num_correct,num_retrieval_correct,num_incorrect,num_retrieval_incorrect,accuracy,retrieval_accuracy
-experiment_1,fast,<class 'langchain.text_splitter.RecursiveCharacterTextSplitter'>,1000,100,similarity,4,0.5,gpt-3.5-turbo,stuff,27,19,0,8,27,0.7037037037037037,0.0
-experiment_2,fast,<class 'langchain.text_splitter.TokenTextSplitter'>,1000,100,similarity,4,0.5,gpt-3.5-turbo,stuff,27,22,0,5,27,0.8148148148148148,0.0
