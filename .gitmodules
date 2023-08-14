@@ -1,0 +1,4 @@
+[submodule "backendfirebase"]
+	path = backendfirebase
+	url = git@github.com:AlgoveraAI/backendfirebase.git
+	branch = main
