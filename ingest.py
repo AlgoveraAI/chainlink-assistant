@@ -8,6 +8,7 @@ from ingest.docs import scrap_docs
 from ingest.blogs import scrape_blogs
 from ingest.education import scrap_education_docs
 from ingest.stackoverflow import scrap_stackoverflow
+from ingest.data import scrap_data
 from config import get_logger
 
 logger = get_logger(__name__)
@@ -20,6 +21,7 @@ if __name__ == "__main__":
     parser.add_argument('--blogs', type=bool, help='Parse blog posts', default=False)
     parser.add_argument('--education', type=bool, help='Parse chainlink.education', default=False)
     parser.add_argument('--stackoverflow', type=bool, help='Parse stackoverflow', default=False)
+    parser.add_argument('--data', type=bool, help='Parse from data.chain.link', default=False)
     parser.add_argument('--all', type=bool, help='Parse all', default=False)
     parser.add_argument('--so_token', type=str, help='Stackoverflow token', default=None)
     args = parser.parse_args()
@@ -33,6 +35,7 @@ if __name__ == "__main__":
         args.blogs = True
         args.education = True
         args.stackoverflow = True
+        args.data = True
 
     # If all or stackoverflow is true, ensure token is set
     if args.all or args.stackoverflow:
@@ -59,6 +62,11 @@ if __name__ == "__main__":
         logger.info("Parsing stackoverflow")
         stackoverflow_documents = scrap_stackoverflow(args.so_token)
 
+    # Parse data.chain.link
+    if args.data:
+        logger.info("Parsing data.chain.link")
+        data_documents = scrap_data()
+
     # Log the number of documents
     if args.docs:
         logger.info(f"Docs: {len(docs_documents)}")
@@ -68,6 +76,8 @@ if __name__ == "__main__":
         logger.info(f"Education: {len(chainlink_education_documents)}")
     if args.stackoverflow:
         logger.info(f"Stackoverflow: {len(stackoverflow_documents)}")
+    if args.data:
+        logger.info(f"Data: {len(data_documents)}")
 
     # Combine all documents into one list
     documents = []
@@ -84,6 +94,11 @@ if __name__ == "__main__":
     if args.stackoverflow:
         documents_count += len(stackoverflow_documents)
         documents.extend(stackoverflow_documents)
+
+    # TODO: maybe keep data as different retriever
+    # if args.data:
+    #     documents_count += len(data_documents)
+    #     documents.extend(data_documents)
         
     logger.info(f"Total documents: {documents_count}")
     # Log the total number of documents
