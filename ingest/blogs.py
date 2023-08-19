@@ -1,3 +1,4 @@
+import re
 import time
 import pickle
 from tqdm import tqdm
@@ -12,6 +13,7 @@ from selenium.webdriver.chrome.options import Options
 from langchain.docstore.document import Document
 
 from config import get_logger
+from ingest.utils import remove_prefix_text, extract_first_n_paragraphs, get_description_chain
 
 logger = get_logger(__name__)
 
@@ -145,17 +147,35 @@ def scrape_blogs():
             unsuccessful_urls.append(url)
 
     blogs = []
-    provessed_urls = []
+    processed_urls = []
     for (url, soup) in tqdm(soups, total=len(soups)):
-        if url in provessed_urls:
+        if url in processed_urls:
             continue
         markdown = to_markdown((url, soup))
         blogs.append(markdown)
-        provessed_urls.append(url)
+        processed_urls.append(url)
+
+    # Get description chain
+    chain_description = get_description_chain()
 
     blogs_documents = []
-    for url, markdown in blogs:
-        blogs_documents.append(Document(page_content=markdown, metadata={"source": url, "type": "blog"}))
+    for url, markdown in tqdm(blogs, total=len(blogs)):
+        
+        # Remove anything above title
+        markdown_content = remove_prefix_text(markdown)
+        # Get title
+        titles = re.findall(r'^#\s(.+)$', markdown_content, re.MULTILINE)
+        title = titles[0].strip()         
+        
+        # Get description
+        para = extract_first_n_paragraphs(markdown_content, num_para=2)
+        description = chain_description.predict(context=para)
+        
+        blogs_documents.append(Document(page_content=markdown, metadata={
+            "source": url, 
+            "source_type": "blog",
+            "title": title,
+            "description": description}))
 
     # Make sure the output directory exists
     Path("./data").mkdir(parents=True, exist_ok=True)

@@ -166,3 +166,6 @@ cython_debug/
 key_dev.json
 /nbs/docs*
 /nbs/faiss*
+
+*.pdf 
+*.pkl

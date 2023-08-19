@@ -9,6 +9,7 @@ from ingest.blogs import scrape_blogs
 from ingest.education import scrap_education_docs
 from ingest.stackoverflow import scrap_stackoverflow
 from ingest.data import scrap_data
+from ingest.chain_link import scrap_chain_link
 from config import get_logger
 
 logger = get_logger(__name__)
@@ -22,6 +23,7 @@ if __name__ == "__main__":
     parser.add_argument('--education', type=bool, help='Parse chainlink.education', default=False)
     parser.add_argument('--stackoverflow', type=bool, help='Parse stackoverflow', default=False)
     parser.add_argument('--data', type=bool, help='Parse from data.chain.link', default=False)
+    parser.add_argument('--chain_link', type=bool, help='Parse from the main website chain.link', default=False)
     parser.add_argument('--all', type=bool, help='Parse all', default=False)
     parser.add_argument('--so_token', type=str, help='Stackoverflow token', default=None)
     args = parser.parse_args()
@@ -36,6 +38,7 @@ if __name__ == "__main__":
         args.education = True
         args.stackoverflow = True
         args.data = True
+        args.chain_link = True
 
     # If all or stackoverflow is true, ensure token is set
     if args.all or args.stackoverflow:
@@ -67,6 +70,11 @@ if __name__ == "__main__":
         logger.info("Parsing data.chain.link")
         data_documents = scrap_data()
 
+    # Parse chain.link
+    if args.chain_link:
+        logger.info("Parsing chain.link")
+        chain_link_documents, chain_link_youtube_documents = scrap_chain_link()
+
     # Log the number of documents
     if args.docs:
         logger.info(f"Docs: {len(docs_documents)}")
@@ -78,8 +86,11 @@ if __name__ == "__main__":
         logger.info(f"Stackoverflow: {len(stackoverflow_documents)}")
     if args.data:
         logger.info(f"Data: {len(data_documents)}")
+    if args.chain_link:
+        logger.info(f"Chain Link: {len(chain_link_documents)}")
+        logger.info(f"Chain Link Youtube: {len(chain_link_youtube_documents)}")
 
-    # Combine all documents into one list
+    # Combine all documents into one list (except data)
     documents = []
     documents_count = 0
     if args.docs:
@@ -94,6 +105,11 @@ if __name__ == "__main__":
     if args.stackoverflow:
         documents_count += len(stackoverflow_documents)
         documents.extend(stackoverflow_documents)
+    if args.chain_link:
+        documents_count += len(chain_link_documents)
+        documents.extend(chain_link_documents)
+        documents_count += len(chain_link_youtube_documents)
+        documents.extend(chain_link_youtube_documents)
 
     # TODO: maybe keep data as different retriever
     # if args.data:
@@ -104,8 +120,9 @@ if __name__ == "__main__":
     # Log the total number of documents
     logger.info(f"Total: {len(documents)}")
 
-    # Save documents to disk
-    with open(f"./data/documents_{datetime.now().strftime('%Y-%m-%d')}.pkl", 'wb') as f:
-        pickle.dump(documents, f)
+    # Save documents to disk if args.all is true
+    if args.all:
+        with open(f"./data/documents_{datetime.now().strftime('%Y-%m-%d')}.pkl", 'wb') as f:
+            pickle.dump(documents, f)
 
     logger.info("Done")

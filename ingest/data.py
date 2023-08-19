@@ -138,7 +138,7 @@ BASE_URLS = [
 ]
 
 
-def make_sentence(details):
+def make_sentence(details, url):
     """Make a sentence from the details"""
 
     first_sentence = """The following is the details for the pair {pair} which operates on the {network}."""
@@ -174,43 +174,45 @@ def make_sentence(details):
         if "ens_address" in details.keys():
             sentence += f" {eigth_sentence.format(ens_address=details['ens_address'])}"
 
+        title = f"{details['pair']} on {details['network']}"
+        description = f"Details for {details['pair']} on {details['network']}"
+
+        doc = Document(
+            page_content=sentence, 
+            metadata={
+            "title": title, 
+            "description": description, 
+            'source_type': 'data',
+            'source': url}
+        )
+
     else:
         logger.error(f"Missing keys in details: {details.keys()}")
 
-    return sentence
+    return doc
 
 def scrap_data():
     """Scrap data from the website and put into a Document"""
 
-    documents = []
+    sentences = []
     for base_url in tqdm(BASE_URLS, total=len(BASE_URLS)):
         logger.info(f"Scraping {base_url}")
         all_links  = get_links(base_url)
         logger.info(f"Total links: {len(all_links)}")
 
-        all_details = []
-
         for u in tqdm(all_links, total=len(all_links)):
             try:
-                all_details.append(get_details(u))
+                detail = get_details(u)
+                doc = make_sentence(detail, u)
+                sentences.append(doc)
             except Exception as e:
                 logger.error(f'Failed to get details for {u}')
                 logger.error(e)
-
-        # Make a sentence for each details
-        all_sentences = [make_sentence(details) for details in all_details]
-
-        # Maken sentences in a continuous string
-        all_sentences = "\n\n".join(all_sentences)
-
-        # put into a Document
-        doc = Document(page_content=all_sentences, metadata={"source": base_url})
-        documents.append(doc)
 
         logger.info(f"Scraping {base_url} done")
 
     # Save the documents
     with open(f"./data/datadocs_{datetime.now().strftime('%Y-%m-%d')}.pkl", 'wb') as f:
-        pickle.dump(documents, f)
+        pickle.dump(sentences, f)
     
-    return documents
+    return sentences

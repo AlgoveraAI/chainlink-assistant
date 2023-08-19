@@ -23,6 +23,7 @@ from selenium.webdriver.chrome.options import Options
 from langchain.docstore.document import Document
 
 from config import get_logger
+from ingest.utils import remove_prefix_text, extract_first_n_paragraphs, get_description_chain
 
 logger = get_logger(__name__)
 
@@ -301,11 +302,34 @@ def scrap_docs():
     all_urls = get_all_suburls("https://docs.chain.link/")
     all_urls = sorted(list(set(all_urls)))
 
+    # Get description chain
+    chain_description = get_description_chain()
+
     docs_documents = []
     for url in tqdm(all_urls):
         data = parse(url)
         if data:
-            docs_documents.append(Document(page_content=data, metadata={'source': url, 'type': 'technical_document'}))
+            # Remove anything above title
+            markdown_content = remove_prefix_text(data)
+            # Get title
+            try:
+                titles = re.findall(r'^#\s(.+)$', markdown_content, re.MULTILINE)
+                title = titles[0].strip()
+            except:
+                title = markdown_content.split("\n\n")[0].replace("#", "").strip()  
+            
+            # Get description
+            para = extract_first_n_paragraphs(markdown_content, num_para=2)
+            description = chain_description.predict(context=para) 
+
+            docs_documents.append(
+                Document(page_content=data, 
+                metadata={
+                    'source': url, 
+                    'source_type': 'technical_document',
+                    'title':title,
+                    'description':description}))
+        
         docs_documents = remove_duplicates(docs_documents)
 
     # Make sure the output directory exists
