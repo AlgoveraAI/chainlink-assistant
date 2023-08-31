@@ -54,6 +54,9 @@ def get_all_questions(access_token):
 
     all_questions = sorted(all_questions, key=lambda x: x['creation_date'], reverse=True)
 
+    # Only consider questions from user with reputation > 50. Some questions don't have reputation field. They should be removed
+    all_questions = [question for question in all_questions if 'reputation' in question['owner'].keys() and question['owner']['reputation'] > 50]
+
     h = html2text.HTML2Text()
     h.ignore_links = False
     h.ignore_images = True
@@ -65,6 +68,13 @@ def get_all_questions(access_token):
         answers = get_answers(question['question_id'], key, access_token)
         if not answers:  # Skip questions with no answers
             continue
+        
+        # Only keep accepted answer
+        answers = [answer for answer in answers if answer['is_accepted'] == True]
+
+        # Only keep answer from user with reputation > 50; some answers don't have reputation field. they should be removed
+        answers = [answer for answer in answers if 'reputation' in answer['owner'].keys() and answer['owner']['reputation'] > 50]
+
         question_body = re.sub(r'!\[.*?\]\(.*?\)', '', h.handle(question['body']))
         question_str = "Question: (Asked on: " + datetime.utcfromtimestamp(question['creation_date']).strftime('%Y-%m-%d %H:%M:%S') + ")\n" + question['title'] + "\n"
         question_url = "URL: " + question['link'] + "\n\n"
