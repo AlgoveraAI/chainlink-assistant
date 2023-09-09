@@ -78,7 +78,10 @@ def get_driver():
 
     # Check if chromedriver exists at the specified path
     if not os.path.exists(CHROMEDRIVER_PATH):
-        CHROMEDRIVER_PATH = ChromeDriverManager().install()
+        try:
+            CHROMEDRIVER_PATH = ChromeDriverManager().install()
+        except:
+            CHROMEDRIVER_PATH = '/opt/homebrew/bin/chromedriver'
 
     # Set up the webdriver using the determined path
     s = Service(CHROMEDRIVER_PATH)

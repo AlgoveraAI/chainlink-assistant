@@ -140,9 +140,10 @@
 
             // Disable the username, context_uuid, assistant_uuid, memory and memory_uuid fields after first message
             usernameField.disabled = true;
-            memoryField.disabled = true;
+            // memoryField.disabled = true;
             // memoryUUIDField.disabled = true;
             document.getElementById('messageText').value = "";
+            console.log('Message sent');
 
             // Turn the button into a loading button
             var button = document.getElementById('send');
@@ -161,6 +162,7 @@
 
             // Clear chat messages
             document.getElementById('messages').innerHTML = '';
+            console.log('Chat reset');
 
             // Enable form fields
             document.getElementById('username').disabled = false;

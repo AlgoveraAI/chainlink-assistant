@@ -67,7 +67,7 @@ def call_llm_final_2_answer(question, document, chain):
     return chain.apredict(question=question, document=document)
 
 
-def process_documents(question, chain, max_tokens=14_000):
+def process_documents(question, chain, retriever, max_tokens=14_000):
     """Process a list of documents with LLM calls."""
     
     # Use router to decide which workflow to use
@@ -100,7 +100,7 @@ async def get_answer(question, manager, max_tokens=14_000):
     """Get an answer to a question."""
 
     # Get the retriever chain
-    base_chain = get_retriever_chain()
+    retriever, base_chain = get_retriever_chain()
 
     # Send a status message
     resp = ChatResponse(
@@ -112,7 +112,8 @@ async def get_answer(question, manager, max_tokens=14_000):
     batches, num_llm_calls, workflow = process_documents(
         question=question, 
         max_tokens=max_tokens,
-        chain=base_chain
+        chain=base_chain,
+        retriever=retriever
     )
 
     # Get the streaming chain

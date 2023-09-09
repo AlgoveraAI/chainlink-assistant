@@ -4,10 +4,9 @@ from typing import Any, List, Optional, Dict
 from langchain.schema import BaseRetriever
 from langchain.docstore.document import Document
 from langchain.retrievers import TFIDFRetriever
+from config import get_logger
 
-import logging
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class SearchRetriever(BaseRetriever, BaseModel):
     blog_retriever: TFIDFRetriever
@@ -62,6 +61,7 @@ class SearchRetriever(BaseRetriever, BaseModel):
         )
 
     def get_relevant_documents(self, query: str, type_: str = 'all') -> List[Document]:
+        logger.info(f"Query: {query}")
         r_docs = []
 
         if type_ == "all":
@@ -72,7 +72,6 @@ class SearchRetriever(BaseRetriever, BaseModel):
                 r_docs.extend([doc.metadata for doc in ordered_texts[:2]])
 
             # Add 5 from all docs if not already added to r_docs
-            
             r_docs.extend([doc.metadata for doc in self.all_docs_retriever.get_relevant_documents(query)[:5]])
 
             retrievers = [
@@ -88,8 +87,6 @@ class SearchRetriever(BaseRetriever, BaseModel):
                         r_docs.append(doc.metadata)
                     if len(r_docs) >= self.k_final:
                         break
-
-            
 
         elif type_ in ["blog", "technical_document"]:
             retriever = self.blog_retriever if type_ == "blog" else self.tech_retriever

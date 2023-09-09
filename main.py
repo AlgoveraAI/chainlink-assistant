@@ -16,7 +16,8 @@ from chat.utils import get_search_retriever
 from config import get_logger
 
 # Global variables
-logger = get_logger(name=__name__)
+logger = get_logger(__name__)
+
 new_ingest = False
 new_ingest_time = None
 templates = Jinja2Templates(directory="templates")
@@ -26,25 +27,9 @@ except:
     chainlink_search_retrevier = None
     logger.info("Search retriever not loaded")
 
-
-def get_logger():
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    # Formatter
-    formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
-    handler = logging.StreamHandler()
-    handler.setLevel(logging.DEBUG)
-    # add formatter to ch
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    return logger
-
-logger = get_logger()
-
 load_dotenv()
 
 app = FastAPI()
-
 
 @app.get("/")
 def read_root():
@@ -146,19 +131,14 @@ def search(
             new_ingest = False
             new_ingest_time = None
 
-    # Get search retriever
-    chainlink_search_retrevier = get_search_retriever()
-
     logger.info("General Search")
     job_dict = job.dict()
+    logger.info(job_dict)
 
     # Get search results
-    results = chainlink_search_retrevier.get_relevant_documents(job_dict["query"], job_dict["type_"])
-
-    # get metadata
-    resp = []
-    for result in results:
-        resp.append(result.metadata)
+    results = chainlink_search_retrevier.get_relevant_documents(query=job_dict["query"], type_=job_dict["type_"])
+    logger.info(f"Retrieved {len(results)} documents")
+    logger.info(results)
 
     # Return results
-    return SearchResponseSchema(results=resp)
+    return SearchResponseSchema(results=results)
