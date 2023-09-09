@@ -1,4 +1,9 @@
 import re
+import os
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 
@@ -47,3 +52,36 @@ def extract_first_n_paragraphs(content, num_para=2):
     
     # Return the first num_para paragraphs or whatever is available
     return '\n\n'.join(paragraphs[:num_para])
+
+
+def get_driver():
+    # Path to your chromedriver (change this to your path)
+    CHROMEDRIVER_PATH = '/usr/local/bin/chromedriver'
+
+    # Set up Chrome options
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Ensure GUI is off
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+
+    # Multiple potential paths for Chrome binary
+    CHROME_PATHS = [
+        "/opt/google/chrome/chrome-linux64/chrome",
+        "/opt/google/chrome/chrome/chrome"
+    ]
+
+    # Set the binary location to the first existing path
+    for path in CHROME_PATHS:
+        if os.path.exists(path):
+            chrome_options.binary_location = path
+            break
+
+    # Check if chromedriver exists at the specified path
+    if not os.path.exists(CHROMEDRIVER_PATH):
+        CHROMEDRIVER_PATH = ChromeDriverManager().install()
+
+    # Set up the webdriver using the determined path
+    s = Service(CHROMEDRIVER_PATH)
+    driver = webdriver.Chrome(options=chrome_options, service=s)
+
+    return driver

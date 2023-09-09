@@ -3,53 +3,62 @@ import time
 import pickle
 from tqdm import tqdm
 from pathlib import Path
-from datetime import datetime
 from bs4 import BeautifulSoup
-from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from langchain.docstore.document import Document
-
-from config import get_logger
-from ingest.utils import remove_prefix_text, extract_first_n_paragraphs, get_description_chain
+from concurrent.futures import ProcessPoolExecutor
+from config import get_logger, ROOT_DIR, DATA_DIR
+from ingest.utils import remove_prefix_text, extract_first_n_paragraphs, get_description_chain, get_driver
 
 logger = get_logger(__name__)
+MAX_WORKERS = 10
+driver = get_driver()
 
+def close_popup(driver):
+    try:
+        close_btn = driver.find_element(By.XPATH, "/html/body/div[4]/a[2]")
+        close_btn.click()
+        time.sleep(2)  # give it a moment to close
+    except Exception as e:
+        # if we can't find the popup close button, just continue
+        pass
 
-# Set up Chrome options
-chrome_options = Options()
-chrome_options.add_argument("--headless")  # Ensure GUI is off
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-
-# Set up the webdriver
-s=Service(ChromeDriverManager().install())
-driver = webdriver.Chrome(service=s, options=chrome_options)
-
+def click_load_more_button(driver, attempts=5):
+    try:
+        close_popup(driver)
+        
+        wait = WebDriverWait(driver, 10)
+        element = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/section/div/div/div[3]/div[2]/a")))
+        element.click()
+        return True
+    except Exception as e:
+        if attempts > 0:
+            time.sleep(5)
+            return click_load_more_button(driver, attempts - 1)
+        else:
+            logger.error(f"Failed to click on 'load more'. Error: {str(e)}")
+            return False
+            
 def get_blog_urls():
     urls = set()
     try:
+        driver.maximize_window()
+        driver.get("https://blog.chain.link/?s=&categories=&services=&tags=&sortby=newest")
+        time.sleep(3)
         for i in range(200):
-            if i == 0:
-                driver.get("https://blog.chain.link/?s=&categories=&services=&tags=&sortby=newest")
-                driver.implicitly_wait(3)
-                time.sleep(3)
-                soup = BeautifulSoup(driver.page_source, 'html.parser')
-                blogs = [post.a["href"] for post in soup.findAll('div', class_='post-card')]
-                urls |= set(blogs)
-            else:
-                element = driver.find_element(By.XPATH, "/html/body/div[1]/div/section/div/div/div[3]/div[2]/a")
-                element.click()
-                soup = BeautifulSoup(driver.page_source, 'html.parser')
-                blogs = [post.a["href"] for post in soup.findAll('div', class_='post-card')]
-                urls |= set(blogs)
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            blogs = [post.a["href"] for post in soup.findAll('div', class_='post-card')]
+            urls |= set(blogs)
+            
+            if not click_load_more_button(driver):
+                break
+
             if i % 10 == 0:
                 logger.info(f"Scraped {len(urls)} blog urls")
     except Exception as e:
         logger.error(f"Error scraping blog urls: {e}")
-        pass
 
     return urls
 
@@ -132,60 +141,64 @@ def to_markdown(pair):
         return (url, "")
 
 
-def scrape_blogs():
-    urls = get_blog_urls()
+def fetch_url_content(url):
+    try:
+        driver.get(url)
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        return (url, soup)
+    except Exception as e:
+        logger.error(f"Error scraping {url}: {e}")
+        return (url, None)
 
-    soups = []
-    unsuccessful_urls = []
-    for url in tqdm(urls, total=len(urls)):
-        try:
-            driver.get(url)
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
-            soups.append((url, soup))
-        except Exception as e:
-            logger.error(f"Error scraping {url}: {e}")
-            unsuccessful_urls.append(url)
+title_pattern = re.compile(r'^#\s(.+)$', re.MULTILINE)
+chain_description = get_description_chain()
 
-    blogs = []
-    processed_urls = []
-    for (url, soup) in tqdm(soups, total=len(soups)):
-        if url in processed_urls:
-            continue
-        markdown = to_markdown((url, soup))
-        blogs.append(markdown)
-        processed_urls.append(url)
-
-    # Get description chain
-    chain_description = get_description_chain()
-
-    blogs_documents = []
-    for url, markdown in tqdm(blogs, total=len(blogs)):
-        
-        # Remove anything above title
+def process_blog_entry(blog):
+    try:
+        url, markdown = blog
         markdown_content = remove_prefix_text(markdown)
-        # Get title
-        titles = re.findall(r'^#\s(.+)$', markdown_content, re.MULTILINE)
-        title = titles[0].strip()         
         
-        # Get description
+        titles = title_pattern.findall(markdown_content)
+        title = titles[0].strip() if titles else "No Title"
+        
         para = extract_first_n_paragraphs(markdown_content, num_para=2)
         description = chain_description.predict(context=para)
         
-        blogs_documents.append(Document(page_content=markdown, metadata={
+        return Document(page_content=markdown, metadata={
             "source": url, 
             "source_type": "blog",
             "title": title,
-            "description": description}))
+            "description": description})
+    except Exception as e:
+        logger.error(f"Error processing blog entry {blog[0]}: {e}")
+        return None
 
-    # Make sure the output directory exists
-    Path("./data").mkdir(parents=True, exist_ok=True)
+def scrap_blogs():
+    urls = get_blog_urls()
 
-    # Save the documents to a pickle file with date in the name
-    with open(f"./data/blog_{datetime.now().strftime('%Y-%m-%d')}.pkl", 'wb') as f:
+    # Use concurrent.futures to parallelize the fetching of URLs
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        soups = list(tqdm(executor.map(fetch_url_content, urls), total=len(urls)))
+
+    unsuccessful_urls = [url for url, soup in soups if not soup]
+    successful_soups = [(url, soup) for url, soup in soups if soup]
+
+    # Use concurrent.futures to parallelize the markdown conversion
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        blogs = list(tqdm(executor.map(to_markdown, successful_soups), total=len(successful_soups)))
+
+    # with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+    #     blogs_documents = list(tqdm(executor.map(process_blog_entry, blogs), total=len(blogs)))
+    
+    blogs_documents = [process_blog_entry(blog) for blog in tqdm(blogs, desc="Processing Blog Entries")]
+
+    # Remove nones
+    blogs_documents = [doc for doc in blogs_documents if doc]
+
+    with open(f"{DATA_DIR}/blog_documents.pkl", 'wb') as f:
         pickle.dump(blogs_documents, f)
     
     logger.info(f"Scraped blog posts")
 
     return blogs_documents
-
         

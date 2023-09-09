@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pydantic import BaseModel
 
 
@@ -33,3 +33,18 @@ class ChatResponse(BaseModel):
     message: str
     type: MessageType
     memory_uuid: Optional[str] = None
+
+
+class SearchType(str, Enum):
+    blog = "blog"
+    technical_document = "technical_document"
+    all = "all"
+
+
+class SearchRequestSchema(BaseModel):
+    query: str
+    type_: SearchType = SearchType.all
+    
+
+class SearchResponseSchema(BaseModel):
+    results: List[Dict[str, str]]

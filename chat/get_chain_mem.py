@@ -1,18 +1,14 @@
 from langchain.llms import base
 import tiktoken
-from chainlink.prompts_mem import (
+from chat.prompts_mem import (
     FINAL_ANSWER_PROMPT,
     FINAL_ANSWER_2_PROMPT,
     QUESTION_MODIFIER_PROMPT,
 )
-from chainlink.prompts_no_mem import (
+from chat.prompts_no_mem import (
     ROUTER_PROMPT,
 )
-from chainlink.utils import (
-    retriever,
-    chain as base_chain,
-    get_streaming_chain,
-)
+from chat.utils import get_retriever_chain, get_streaming_chain
 from utils import createLogHandler
 from schemas import ChatResponse, Sender, MessageType
 
@@ -104,6 +100,10 @@ async def process_documents(question, chain, memory, max_tokens=14_000):
 
 async def get_answer_memory(question, memory, max_tokens=14_000, manager=None):
     """Process documents and call LLM."""
+
+    # Get retriever and chain
+    retriever, base_chain = get_retriever_chain()
+
     resp = ChatResponse(
         sender=Sender.BOT, message="Retrieving Documents", type=MessageType.STATUS
     )

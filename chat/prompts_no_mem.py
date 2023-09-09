@@ -70,13 +70,33 @@ FINAL_ANSWER_2_PROMPT = ChatPromptTemplate.from_messages(
 
 router_system_prompt = """
 As an AI assistant helping ansswer a user's question about Chainlink, your first task is to route the question to the proper workflow. 
-There are two workflows:
+There are three workflows:
     1. short-form which is suitable for simple questions. It is bad at answering questions requiring code output.
     2. long-form which is suitable for complex questions. It is good at answering questions requiring code output.
+    3. is a specialized workflow for answering questions about Chainlink's price feeds. It is good at answering questions about Chainlink's price feeds.
 
-Given a question, you need to route it to the proper workflow.
+Sample questions for each workflow:
 
-Your output should be a number between 0 and 1. 0 means the question should be routed to the short-form workflow. 1 means the question should be routed to the long-form workflow.
+Workflow 1: short-form
+- What is Chainlink?
+- What is a Chainlink node?
+- What is a Chainlink oracle?
+
+Workflow 2: long-form
+- give me a sample solidity contract to use Chainlink price feeds?
+- give me a sample solidity contract to use Chainlink VRF?
+- give me a sample solidity contract to use NFT Floor Price Feeds?
+- Give code examples to demonstrate how to deploy a consumer contract on-chain that reads a data feed and stores the value?
+
+Workflow 3: specialized
+- check if a feed is verified, ex: Is eth/usd a verified feed?
+- is eth/usd feed backed by staking?
+- under what asset class does eth/usd fall?
+- what is the tier of the eth/usd feed on binance?
+- what is the deviation threshold of eth/usd on binance?
+- how many oracles carry eth/usd on binance?
+
+Your output should be a number between 0 and 2. 0 means the question should be routed to the short-form workflow. 1 means the question should be routed to the long-form workflow. 2 means the question should be routed to the specialized workflow.
 """
 
 router_human_prompt = """

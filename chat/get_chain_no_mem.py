@@ -1,11 +1,11 @@
 import logging
 import tiktoken
-from chainlink.prompts_no_mem import (
+from chat.prompts_no_mem import (
     FINAL_ANSWER_PROMPT,
     FINAL_ANSWER_2_PROMPT,
     ROUTER_PROMPT
 )
-from chainlink.utils import retriever, chain as base_chain, get_streaming_chain
+from chat.utils import get_retriever_chain, get_streaming_chain
 
 from schemas import ChatResponse, Sender, MessageType
 
@@ -98,6 +98,11 @@ def process_documents(question, chain, max_tokens=14_000):
 
 async def get_answer(question, manager, max_tokens=14_000):
     """Get an answer to a question."""
+
+    # Get the retriever chain
+    base_chain = get_retriever_chain()
+
+    # Send a status message
     resp = ChatResponse(
         sender=Sender.BOT, message="Retrieving Documents", type=MessageType.STATUS
     )
@@ -117,6 +122,7 @@ async def get_answer(question, manager, max_tokens=14_000):
         workflow=workflow
     )
 
+    # Send a status message
     resp = ChatResponse(
         sender=Sender.BOT, message=f"Generating Answer", type=MessageType.STATUS
     )

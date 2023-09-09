@@ -1,5 +1,6 @@
 # Required libraries
 import re
+import os
 import bs4
 import time
 import pickle
@@ -9,21 +10,14 @@ import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 import concurrent.futures
-from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from typing import List, Optional, Set
 from requests.exceptions import RequestException
-
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
-
 from langchain.docstore.document import Document
 
-from config import get_logger
-from ingest.utils import remove_prefix_text, extract_first_n_paragraphs, get_description_chain
+from config import DATA_DIR, get_logger
+from ingest.utils import remove_prefix_text, extract_first_n_paragraphs, get_description_chain, get_driver
 
 logger = get_logger(__name__)
 
@@ -32,15 +26,8 @@ MAX_THREADS = 10
 REQUEST_DELAY = 0.1
 SESSION = requests.Session()
 
-# Set up Chrome options
-chrome_options = Options()
-chrome_options.add_argument("--headless")  # Ensure GUI is off
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-
-# Set up the webdriver
-s=Service(ChromeDriverManager().install())
-driver = webdriver.Chrome(service=s, options=chrome_options)
+# Get the driver
+driver = get_driver()
 
 def filter_urls_by_base_url(urls:List, base_url:str):
     """
@@ -78,22 +65,18 @@ def fetch_url_request(url:str):
         return None
 
 def fetch_url_selenium(url:str):
-    """
-    Fetches the content of a URL using Selenium and returns the source HTML of the page.
-    In case of any exception during fetching, logs the error and returns None.
-
-    :param url: URL to fetch.
-    :return: HTML source as a string on successful fetch, None otherwise.
-    """
+    local_driver = get_driver()
     try:
-        driver.get(url)
-        driver.implicitly_wait(7)
-        time.sleep(7)
-        return driver.page_source
-    
+        local_driver.get(url)
+        local_driver.implicitly_wait(3)
+        time.sleep(3)
+        source = local_driver.page_source
     except RequestException as e:
         logger.error(f"Error fetching {url}: {e}")
-        return None
+        source = None
+    finally:
+        local_driver.quit()
+    return source
 
 def process_url(response:requests.Response, visited:Set, base_url:str):
     """
@@ -306,37 +289,44 @@ def scrap_docs():
     chain_description = get_description_chain()
 
     docs_documents = []
-    for url in tqdm(all_urls):
-        data = parse(url)
-        if data:
-            # Remove anything above title
-            markdown_content = remove_prefix_text(data)
-            # Get title
+
+    # Utilizing ThreadPoolExecutor to parallelize the fetching and processing of URLs
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+        future_to_url = {executor.submit(parse, url): url for url in all_urls}
+        for future in tqdm(concurrent.futures.as_completed(future_to_url), total=len(all_urls)):
+            url = future_to_url[future]
             try:
-                titles = re.findall(r'^#\s(.+)$', markdown_content, re.MULTILINE)
-                title = titles[0].strip()
-            except:
-                title = markdown_content.split("\n\n")[0].replace("#", "").strip()  
-            
-            # Get description
-            para = extract_first_n_paragraphs(markdown_content, num_para=2)
-            description = chain_description.predict(context=para) 
+                data = future.result()
+            except Exception as e:
+                logger.error(f"Exception occurred in scraping {url}: {e}")
+                continue
 
-            docs_documents.append(
-                Document(page_content=data, 
-                metadata={
-                    'source': url, 
-                    'source_type': 'technical_document',
-                    'title':title,
-                    'description':description}))
-        
-        docs_documents = remove_duplicates(docs_documents)
+            if data:
+                # Remove anything above title
+                markdown_content = remove_prefix_text(data)
+                # Get title
+                try:
+                    titles = re.findall(r'^#\s(.+)$', markdown_content, re.MULTILINE)
+                    title = titles[0].strip()
+                except:
+                    title = markdown_content.split("\n\n")[0].replace("#", "").strip()
 
-    # Make sure the output directory exists
-    Path("./data").mkdir(parents=True, exist_ok=True)
+                # Get description
+                para = extract_first_n_paragraphs(markdown_content, num_para=2)
+                description = chain_description.predict(context=para)
+
+                docs_documents.append(
+                    Document(page_content=data,
+                             metadata={
+                                 'source': url,
+                                 'source_type': 'technical_document',
+                                 'title': title,
+                                 'description': description}))
+
+    docs_documents = remove_duplicates(docs_documents)
 
     # Save the documents to a pickle file with date in the name
-    with open(f"./data/techdocs_{datetime.now().strftime('%Y-%m-%d')}.pkl", 'wb') as f:
+    with open(f"{DATA_DIR}/tech_documents.pkl", 'wb') as f:
         pickle.dump(docs_documents, f)
 
     logger.info(f"Scraped technical documents.")

@@ -1,3 +1,4 @@
+import re
 from pydantic import BaseModel
 from typing import Any, List, Optional, Dict
 from langchain.schema import BaseRetriever
@@ -9,16 +10,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 class SearchRetriever(BaseRetriever, BaseModel):
-    # blog_docs: List[Document]
-    # tech_docs: List[Document]
-    blog_retriever: BaseRetriever
-    tech_retriever: BaseRetriever
-    k_final: int = 4
-    logger: Optional[logging.Logger] = None
-
+    blog_retriever: TFIDFRetriever
+    tech_retriever: TFIDFRetriever
+    data_retriever: TFIDFRetriever
+    chain_link_retriever: TFIDFRetriever
+    chain_link_youtube_retriever: TFIDFRetriever
+    all_docs_retriever: TFIDFRetriever
+    networks = [
+        'ethereum', 'polygon', 'optimism', 'fantom', 'harmony',
+        'moonriver', 'metis', 'bnb', 'arbitrum', 'avalanche',
+        'gnosis', 'base', 'moonbeam'
+    ]
+    k_final: int = 20
     class Config:
-        """Configuration for this pydantic object."""
-
         arbitrary_types_allowed = True
 
     @classmethod
@@ -26,57 +30,100 @@ class SearchRetriever(BaseRetriever, BaseModel):
         cls,
         blog_docs: List[Document],
         tech_docs: List[Document],
-        k_final: int = 4,
+        data_docs: List[Document],
+        chain_link_docs: List[Document],
+        chain_link_youtube_docs: List[Document],
+        k_final: int = 20,
         logger: Any = None,
-        **kwargs: Any,
+        **kwargs: Any
     ):
+        # Remove duplicates from chainlink_docs
+        unique_texts = {doc.page_content: doc for doc in chain_link_docs}
+        filtered_chainlink_docs = list(unique_texts.values())
+
         blog_ret = TFIDFRetriever.from_documents(blog_docs, k=30)
         tech_ret = TFIDFRetriever.from_documents(tech_docs, k=30)
+        data_ret = TFIDFRetriever.from_documents(data_docs, k=30)
+        chain_link_ret = TFIDFRetriever.from_documents(filtered_chainlink_docs, k=30)
+        chain_link_youtube_ret = TFIDFRetriever.from_documents(chain_link_youtube_docs, k=30)
+        
+        all_docs = blog_docs + tech_docs + filtered_chainlink_docs + chain_link_youtube_docs
+        all_docs_ret = TFIDFRetriever.from_documents(all_docs, k=30)
 
         return cls(
             blog_retriever=blog_ret,
             tech_retriever=tech_ret,
+            data_retriever=data_ret,
+            chain_link_retriever=chain_link_ret,
+            chain_link_youtube_retriever=chain_link_youtube_ret,
+            all_docs_retriever=all_docs_ret,
             k_final=k_final,
-            logger=logger,
+            logger=logger
         )
 
-    def get_relevant_documents(self, query: str, type_:str='all') -> List[Dict]:
-        """
-        Get relevant documents for a given query.
-
-        param query: The query to search for.
-        param type_: The type of documents to search for. Can be 'blog', 'tech', or 'all'.
-        """
-
-        if type_ == "blog":
-            r_docs = self.blog_retriever.get_relevant_documents(query)
-
-            # Get only the metadata from the original documents
-            r_docs = [doc.metadata for doc in r_docs][:self.k_final]
-
-            return r_docs
-
-        if type_ == "technical_document":
-            r_docs = self.tech_retriever.get_relevant_documents(query)
-
-            # Get only the metadata from the original documents
-            r_docs = [doc.metadata for doc in r_docs][:self.k_final]
-
-            return r_docs
+    def get_relevant_documents(self, query: str, type_: str = 'all') -> List[Document]:
+        r_docs = []
 
         if type_ == "all":
-            r_docs_1 = self.blog_retriever.get_relevant_documents(query)
-            r_docs_2 = self.tech_retriever.get_relevant_documents(query)
+            matching_docs_for_pair = self.find_texts_for_pair(query, self.data_retriever.docs)
+            
+            if matching_docs_for_pair:
+                ordered_texts = self.reorder_matched_texts_by_network(query, matching_docs_for_pair)
+                r_docs.extend([doc.metadata for doc in ordered_texts[:2]])
 
-            # Merge the two lists; one object per document
-            r_docs = []
-            for doc1, doc2 in zip(r_docs_1, r_docs_2):
-                r_docs.append(doc1.metadata)
-                r_docs.append(doc2.metadata)
+            # Add 5 from all docs if not already added to r_docs
+            
+            r_docs.extend([doc.metadata for doc in self.all_docs_retriever.get_relevant_documents(query)[:5]])
 
-            return r_docs[:self.k_final]
+            retrievers = [
+                self.tech_retriever,
+                self.blog_retriever,
+                self.chain_link_retriever,
+                self.chain_link_youtube_retriever
+            ]
 
-        raise ValueError("type_ must be one of 'blog', 'technical_document', or 'all'")
-    
+            for ret in retrievers:
+                for doc in ret.get_relevant_documents(query):
+                    if doc.metadata not in r_docs:
+                        r_docs.append(doc.metadata)
+                    if len(r_docs) >= self.k_final:
+                        break
+
+            
+
+        elif type_ in ["blog", "technical_document"]:
+            retriever = self.blog_retriever if type_ == "blog" else self.tech_retriever
+            r_docs.extend([doc.metadata for doc in retriever.get_relevant_documents(query)[:self.k_final]])
+        else:
+            raise ValueError("type_ must be one of 'blog', 'technical_document', or 'all'")
+
+        # Make sure no duplicates; use 'source' as unique identifier
+        r_docs = list({doc['source']: doc for doc in r_docs}.values())
+        return r_docs
+
+    def extract_pair(self, query):
+        pattern = r'(?i)([a-z]{3,6})\s?/\s?([a-z]{3,6})'
+        matches = re.findall(pattern, query)
+        return matches[0] if matches else None
+
+    def find_texts_for_pair(self, query, docs):
+        pair = self.extract_pair(query)
+        
+        if not pair:
+            return []
+
+        normalized_pair = ('/'.join(pair)).lower().replace(" ", "")
+        matching_docs = [doc for doc in docs if normalized_pair in doc.page_content.lower().replace(" ", "")]
+        
+        return matching_docs
+
+    def reorder_matched_texts_by_network(self, query, matched_docs):
+        matched_networks = [net for net in self.networks if net in query.lower()]
+
+        network_docs = [doc for doc in matched_docs if any(net in doc.page_content.lower() for net in matched_networks)]
+        non_network_docs = [doc for doc in matched_docs if doc not in network_docs]
+
+        return network_docs + non_network_docs
+
     def aget_relevant_documents(self):
-        raise NotImplementedError("This method is not implemented yet.")
+        raise NotImplementedError

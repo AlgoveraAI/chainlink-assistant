@@ -1,7 +1,7 @@
 import os
 import logging
 from dotenv import load_dotenv
-# from backendfirebase.firebase import BackendFirebase
+from pathlib import Path
 
 
 def get_logger(name: str, level: int = logging.INFO) -> logging.Logger:
@@ -33,5 +33,11 @@ logger.info(f"SO_KEY: {os.getenv('SO_KEY')}")
 # Set the stackoverflow key
 os.environ['SO_KEY'] = os.getenv('SO_KEY')
 
-# # Set up Firebase instance
-# firebase = BackendFirebase()
+# Set the root directory
+ROOT_DIR = Path(__file__).parent
+logger.info(f"ROOT_DIR: {ROOT_DIR}")
+
+DATA_DIR = ROOT_DIR / 'data'
+
+# Make sure the data directory exists
+DATA_DIR.mkdir(parents=True, exist_ok=True)

@@ -1,20 +1,19 @@
 import re
+import os
 import time
 import pickle
+from fastapi import Path
 import requests
+import threading
 from tqdm import tqdm
-from datetime import datetime
 from bs4 import BeautifulSoup
-
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
-
 from langchain.docstore.document import Document
+from concurrent.futures import ThreadPoolExecutor
 
-from config import get_logger
+from config import DATA_DIR, get_logger
+from ingest.utils import get_driver
 
+# Get the logger
 logger = get_logger(__name__)
 
 # Settings for requests
@@ -22,16 +21,8 @@ MAX_THREADS = 10
 REQUEST_DELAY = 0.1
 SESSION = requests.Session()
 
-# Set up Chrome options
-chrome_options = Options()
-chrome_options.add_argument("--headless")  # Ensure GUI is off
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-
-# Set up the webdriver
-s=Service(ChromeDriverManager().install())
-driver = webdriver.Chrome(service=s, options=chrome_options)
-
+# Get the driver
+threadLocal = threading.local()
 
 def filter_links(soup, filter_str='/polygon/mainnet/'):
     # Get all links
@@ -48,6 +39,7 @@ def get_links(url):
     """
     Get all links from a given url
     """
+    driver = get_driver_local()
 
     filter_sub_url = url.split("link")[1]
 
@@ -77,6 +69,8 @@ def get_links(url):
 
 
 def get_details(url):
+    driver = get_driver_local()
+    
     driver.get(url)
     driver.implicitly_wait(3)
     time.sleep(3)
@@ -191,28 +185,46 @@ def make_sentence(details, url):
 
     return doc
 
+def get_driver_local():
+    if not hasattr(threadLocal, "driver"):
+        threadLocal.driver = get_driver()
+    return threadLocal.driver
+
+
+def process_link(u, base_url):
+    try:
+        detail = get_details(u)
+        doc = make_sentence(detail, u)
+        return doc
+    except Exception as e:
+        logger.error(f'Failed to get details for {u}')
+        logger.error(e)
+        return None
+
+from tqdm import tqdm
+
 def scrap_data():
     """Scrap data from the website and put into a Document"""
 
     sentences = []
-    for base_url in tqdm(BASE_URLS, total=len(BASE_URLS)):
-        logger.info(f"Scraping {base_url}")
-        all_links  = get_links(base_url)
-        logger.info(f"Total links: {len(all_links)}")
 
-        for u in tqdm(all_links, total=len(all_links)):
-            try:
-                detail = get_details(u)
-                doc = make_sentence(detail, u)
-                sentences.append(doc)
-            except Exception as e:
-                logger.error(f'Failed to get details for {u}')
-                logger.error(e)
+    with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+        for base_url in tqdm(BASE_URLS, total=len(BASE_URLS), desc="Base URLs"):
+            logger.info(f"Scraping {base_url}")
+            all_links  = get_links(base_url)
+            logger.info(f"Total links: {len(all_links)}")
 
-        logger.info(f"Scraping {base_url} done")
+            # Wrap the all_links iterable with tqdm for a progress bar
+            results = executor.map(lambda u: process_link(u, base_url), tqdm(all_links, desc=f"Processing {base_url}", leave=False))
+
+            for r in results:
+                if r:  # if the result is not None
+                    sentences.append(r)
+
+            logger.info(f"Scraping {base_url} done")
 
     # Save the documents
-    with open(f"./data/datadocs_{datetime.now().strftime('%Y-%m-%d')}.pkl", 'wb') as f:
+    with open(f"{DATA_DIR}/data_documents.pkl", 'wb') as f:
         pickle.dump(sentences, f)
     
     return sentences

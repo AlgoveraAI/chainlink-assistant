@@ -1,5 +1,6 @@
+import os
+import faiss
 import pickle
-import re
 import tiktoken
 from pydantic import BaseModel
 from typing import Any, Dict, List
@@ -8,16 +9,14 @@ from langchain.vectorstores import FAISS
 from langchain.schema import BaseRetriever
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore.document import Document
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.callbacks.manager import AsyncCallbackManager
-from langchain.text_splitter import TokenTextSplitter, RecursiveCharacterTextSplitter
+from langchain.text_splitter import TokenTextSplitter
 
-from config import firebase
-from chainlink.prompts_mem import FINAL_ANSWER_PROMPT
+from chat.prompts_mem import FINAL_ANSWER_PROMPT
 from utils import createLogHandler, StreamingLLMCallbackHandler
+from search.search import SearchRetriever
+from config import ROOT_DIR
 
 logger = createLogHandler(__name__, "logs.log")
-
 
 class CustomeSplitter:
     def __init__(self, chunk_threshold=6000, chunk_size=6000, chunk_overlap=50):
@@ -26,8 +25,7 @@ class CustomeSplitter:
         self.chunk_overlap = chunk_overlap
         self.enc = tiktoken.get_encoding("cl100k_base")
         self.splitter = TokenTextSplitter(
-            chunk_size=chunk_size, 
-            chunk_overlap=chunk_overlap
+            chunk_size=chunk_size, chunk_overlap=chunk_overlap
         )
 
     def token_counter(self, document):
@@ -54,16 +52,18 @@ class CustomeSplitter:
                     chunked_documents.append(doc)
             except Exception as e:
                 chunked_documents.append(doc)
-                logger.error(f"Error on document {i}")
-                logger.error(e)
-                logger.error(doc.metadata["source"])
+                print(f"Error on document {i}")
+                print(e)
+                print(doc.metadata["source"])
 
         return chunked_documents
 
 
 class CustomRetriever(BaseRetriever, BaseModel):
     full_docs: List[Document]
-    base_retriever: BaseRetriever = None
+    base_retriever_all: BaseRetriever = None
+    base_retriever_data: BaseRetriever = None
+    k_initial: int = 10
     k_final: int = 4
 
     logger: Any = None
@@ -77,7 +77,8 @@ class CustomRetriever(BaseRetriever, BaseModel):
     def from_documents(
         cls,
         full_docs: List[Document],
-        vector_store: FAISS,
+        vectorstore_all: FAISS,
+        vectorstore_data: FAISS,
         search_kwargs: Dict[str, Any] = {},
         k_initial: int = 10,
         k_final: int = 4,
@@ -90,32 +91,38 @@ class CustomRetriever(BaseRetriever, BaseModel):
 
         return cls(
             full_docs=full_docs,
-            base_retriever=vector_store.as_retriever(search_kwargs={"k": k_initial}),
+            base_retriever_all=vectorstore_all.as_retriever(search_kwargs={"k": k_initial}),
+            base_retriever_data=vectorstore_data.as_retriever(search_kwargs={"k": k_initial}),
             logger=logger,
         )
 
     def get_relevant_documents(self, query: str, workflow:int=1) -> List[Document]:
-
-        results =  self.base_retriever.get_relevant_documents(query=query)
-        self.logger.info(f"Retrieved {len(results)} documents")
         self.logger.info(f"Worflow: {workflow}")
-        
+
         if workflow == 2:
-            doc_ids = [doc.metadata["source"] for doc in results]
+            results = self.base_retriever_data.get_relevant_documents(query=query)
+            self.logger.info(f"Retrieved {len(results)} documents")
+            return results[:self.k_final]
 
-            # make it a set but keep the order
-            doc_ids = list(dict.fromkeys(doc_ids))[:self.k_final]
+        else:
+            results =  self.base_retriever_all.get_relevant_documents(query=query)
+            self.logger.info(f"Retrieved {len(results)} documents")
+            if workflow == 1:
+                doc_ids = [doc.metadata["source"] for doc in results]
 
-            # log to the logger
-            self.logger.info(f"Retrieved {len(doc_ids)} unique documents")
+                # make it a set but keep the order
+                doc_ids = list(dict.fromkeys(doc_ids))[:self.k_final]
 
-            # get upto 4 documents
-            full_retrieved_docs = [d for d in self.full_docs if d.metadata["source"] in doc_ids]
+                # log to the logger
+                self.logger.info(f"Retrieved {len(doc_ids)} unique documents")
 
+                # get upto 4 documents
+                full_retrieved_docs = [d for d in self.full_docs if d.metadata["source"] in doc_ids]
+
+                return self.prepare_source(full_retrieved_docs)
+
+            full_retrieved_docs = results[:self.k_final]
             return self.prepare_source(full_retrieved_docs)
-
-        full_retrieved_docs = results[:self.k_final]
-        return self.prepare_source(full_retrieved_docs)
         
     async def aget_relevant_documents(self, query: str) -> List[Document]:
         raise NotImplementedError
@@ -153,13 +160,31 @@ def prepare_multiple_documents(all_answers):
 
 
 def get_retriever_chain():
-    
-    # Get vector store
-    with open("./data/vectorstore.pkl", "rb") as f:
-        vectorstore = pickle.load(f)
 
-    # Get chunked documents
-    with open("./data/documents.pkl", "rb") as f:
+    folder = f"{ROOT_DIR}/data"
+
+    # Open faiss index all
+    index_all = faiss.read_index(f"{folder}/docs_all.index")
+
+    # Open faiss vector store
+    with open(f"{folder}/faiss_store_all.pkl", "rb") as f:
+        vectorstore_all = pickle.load(f)
+
+    # Put back index
+    vectorstore_all.index = index_all 
+
+    # Open faiss index data
+    index_data = faiss.read_index(f"{folder}/docs_data.index")
+
+    # Open faiss vector store
+    with open(f"{folder}/faiss_store_data.pkl", "rb") as f:
+        vectorstore_data = pickle.load(f)
+
+    # Put back index
+    vectorstore_data.index = index_data
+
+    # Open documents
+    with open(f"{folder}/documents.pkl", "rb") as f:
         documents = pickle.load(f)
 
     splitter = CustomeSplitter()
@@ -167,10 +192,11 @@ def get_retriever_chain():
 
     retriever = CustomRetriever.from_documents(
         chunked_documents,
-        vectorstore, 
-        k_initial=10, 
-        k_final=4, 
-        logger=logger
+        vectorstore_all=vectorstore_all,
+        vectorstore_data=vectorstore_data,
+        k_initial=10,
+        k_final=4,
+        logger=logger,
     )
 
     # Get chain
@@ -211,4 +237,37 @@ def get_streaming_chain(manager, chain, workflow):
     return chain
 
 
-retriever, chain = get_retriever_chain()
+def get_search_retriever():
+    folder = f'{ROOT_DIR}/data'
+    # Open blogs document
+    with open(f"{folder}/blog_documents.pkl", "rb") as f:
+        blog_documents = pickle.load(f)
+
+    # Open technical documents
+    with open(f"{folder}/tech_documents.pkl", "rb") as f:
+        technical_documents = pickle.load(f)
+
+    # data documents
+    with open(f"{folder}/data_documents.pkl", "rb") as f:
+        data_documents = pickle.load(f)
+
+    # chain.link documents
+    with open(f"{folder}/chain_link_main_documents.pkl", "rb") as f:
+        chain_link_documents = pickle.load(f)
+
+    # chainlink youtube documents
+    with open(f"{folder}/chain_link_you_tube_documents.pkl", "rb") as f:
+        chain_link_youtube_documents = pickle.load(f)
+
+
+    chainlink_search_retrevier = SearchRetriever.from_documents(
+        blog_docs=blog_documents,
+        tech_docs=technical_documents,
+        data_docs=data_documents,
+        chain_link_docs=chain_link_documents,
+        chain_link_youtube_docs=chain_link_youtube_documents,
+        k_final=20, 
+        logger=logger
+    )
+
+    return chainlink_search_retrevier

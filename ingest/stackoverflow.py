@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import datetime
 from langchain.docstore.document import Document
 
-from config import get_logger
+from config import DATA_DIR, get_logger
 
 logger = get_logger(__name__)
 
@@ -105,7 +105,7 @@ def scrap_stackoverflow(access_token):
     logger.info(f"First document SO: {so_docs[0]}")
 
     # Save to disk
-    with open("./data/stackoverflow_documents.pkl", "wb") as f:
+    with open(f"{DATA_DIR}/stackoverflow_documents.pkl", "wb") as f:
         pickle.dump(so_docs, f)
 
     logger.info("Scrapped stackoverflow")

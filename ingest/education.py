@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List, Optional
 from langchain.docstore.document import Document
 
-from config import get_logger
+from config import DATA_DIR, get_logger
 
 logger = get_logger(__name__)
 
@@ -97,11 +97,8 @@ def scrap_education_docs():
     gh_tuple = ("https://github.com/oceanByte/chainlink-education.git", "src/api/src/shared/course")
     chainlink_education_documents = load_gh_data(gh_tuple)
 
-    # Make sure the data directory exists
-    Path("./data").mkdir(parents=True, exist_ok=True)
-
     # Save the documents to a pickle file with date in the name
-    with open(f"./data/education_{datetime.now().strftime('%Y-%m-%d')}.pkl", 'wb') as f:
+    with open(f"{DATA_DIR}/education_documents.pkl", 'wb') as f:
         pickle.dump(chainlink_education_documents, f)
     
     logger.info(f"Scrapped chainlink education documents.")

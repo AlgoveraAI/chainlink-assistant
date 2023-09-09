@@ -51,18 +51,18 @@
         }
     </style>
     <script>
-        var endpoint = "wss://streaming.algoverai.link/chat_chainlink";
+        // var endpoint = "wss://streamingprod.algoverai.link/chat_chainlink";
         // var endpoint = "ws://a69484b80e8f84c5b8e408195d4eeec9-1952406453.us-east-1.elb.amazonaws.com/chat";
-        // var endpoint = "ws://localhost:8000/chat_chainlink";
+        var endpoint = "ws://localhost:8000/chat_chainlink";
         var ws = new WebSocket(endpoint);
         // Receive message from server word by word. Display the words as they are received.
         ws.onmessage = function (event) {
             var messages = document.getElementById('messages');
             var data = JSON.parse(event.data);
-            if (data.memory_uuid !== null) {
-                    console.log('memory_uuid: ' + data.memory_uuid);
-                    document.getElementById('memoryUUID').value = data.memory_uuid;
-                }
+            // if (data.memory_uuid !== null) {
+            //         console.log('memory_uuid: ' + data.memory_uuid);
+            //         document.getElementById('memoryUUID').value = data.memory_uuid;
+            //     }
             if (data.sender === "bot") {
                 if (data.type === "start") {
                     var header = document.getElementById('header');
@@ -124,8 +124,8 @@
             
             var usernameField = document.getElementById('username');
             var message = document.getElementById('messageText').value;
-            var memoryField = document.getElementById('memory');
-            var memoryUUIDField = document.getElementById('memoryUUID');
+            // var memoryField = document.getElementById('memory');
+            // var memoryUUIDField = document.getElementById('memoryUUID');
             if (message === "") {
                 return;
             }
@@ -134,14 +134,14 @@
             ws.send(JSON.stringify({
                 'username': usernameField.value,
                 'message': message,
-                'memory': memoryField.checked,
-                'memory_uuid': memoryUUIDField.value
+                // 'memory': memoryField.checked,
+                // 'memory_uuid': memoryUUIDField.value
             }));
 
             // Disable the username, context_uuid, assistant_uuid, memory and memory_uuid fields after first message
             usernameField.disabled = true;
             memoryField.disabled = true;
-            memoryUUIDField.disabled = true;
+            // memoryUUIDField.disabled = true;
             document.getElementById('messageText').value = "";
 
             // Turn the button into a loading button
@@ -153,8 +153,8 @@
             // Reset form fields
             document.getElementById('username').value = '';
             document.getElementById('messageText').value = '';
-            document.getElementById('memory').checked = false;
-            document.getElementById('memoryUUID').value = '';
+            // document.getElementById('memory').checked = false;
+            // document.getElementById('memoryUUID').value = '';
             // Reset WebSocket connection
             ws.close();
             ws = new WebSocket(endpoint);
@@ -164,8 +164,8 @@
 
             // Enable form fields
             document.getElementById('username').disabled = false;
-            document.getElementById('memory').disabled = false;
-            document.getElementById('memoryUUID').disabled = false;
+            // document.getElementById('memory').disabled = false;
+            // document.getElementById('memoryUUID').disabled = false;
         }
     </script>
 </head>
@@ -176,11 +176,11 @@
             <p class="card-text text-center text-sm" id="header"> Ask a question </p>
             <div id="userContextFields" class="form-inline mt-5">
                 <input type="text" class="form-control" placeholder="Enter your uid" id="username">
-                <input type="text" class="form-control" placeholder="Enter memory UUID" id="memoryUUID">
+                <!-- <input type="text" class="form-control" placeholder="Enter memory UUID" id="memoryUUID"> -->
             </div>
-            <div class="w-full flex justify-start items-center">
+            <!-- <div class="w-full flex justify-start items-center">
                 <input type="checkbox" id="memory" class="form-checkbox h-5 w-5 text-blue-600"><span class="ml-2 text-white">Use Memory</span>
-            </div>
+            </div> -->
             <hr class="border-gray-500 mb-5" style="margin-top: 20px;">
             <div id="messages" class="overflow-auto" style="max-height: 500px;"></div>
             <form action="" class="form-inline mt-5" id="chat-form" onsubmit="sendMessage(event)">

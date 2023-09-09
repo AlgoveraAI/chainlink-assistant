@@ -1,49 +1,43 @@
 import re
-import bs4
+import os
 import time
 import json
 import pickle
 import requests
 import html2text
-import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 import concurrent.futures
 from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
-from typing import List, Optional, Set, Dict, Tuple, Union, Any
+from typing import List, Optional, Set, Dict, Tuple
 from requests.exceptions import RequestException
 
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
 
 from langchain.chains import LLMChain
 from langchain.docstore.document import Document
 from langchain.document_loaders import YoutubeLoader
 
 
-from config import get_logger
-from ingest.utils import get_description_chain, remove_prefix_text, extract_first_n_paragraphs
+from config import DATA_DIR, get_logger
+from ingest.utils import get_description_chain, remove_prefix_text, extract_first_n_paragraphs, get_driver
 
 logger = get_logger(__name__)
 
 # Settings for requests
 MAX_THREADS = 10
 REQUEST_DELAY = 0.1
+MAX_WORKERS = 10
+TIMEOUT = 10
 SESSION = requests.Session()
 
-# Set up Chrome options
-chrome_options = Options()
-chrome_options.add_argument("--headless")  # Ensure GUI is off
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
+driver = get_driver()
 
-# Set up the webdriver
-s=Service(ChromeDriverManager().install())
-driver = webdriver.Chrome(service=s, options=chrome_options)
 
 def filter_urls_by_base_url(urls:List, base_url:str):
     """
@@ -80,18 +74,11 @@ def fetch_url_request(url:str):
         logger.error(f"Error fetching {url}: {e}")
         return None
 
+# Use Selenium's WebDriverWait instead of time.sleep
 def fetch_url_selenium(url:str):
-    """
-    Fetches the content of a URL using Selenium and returns the source HTML of the page.
-    In case of any exception during fetching, logs the error and returns None.
-
-    :param url: URL to fetch.
-    :return: HTML source as a string on successful fetch, None otherwise.
-    """
     try:
         driver.get(url)
-        driver.implicitly_wait(7)
-        time.sleep(7)
+        WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
         return driver.page_source
     
     except RequestException as e:
@@ -263,6 +250,75 @@ def scrap_url(url: str,  chain_description:LLMChain, driver: webdriver.Chrome=dr
 
     return doc, u_tube_docs
 
+def concurrent_fetch_url_selenium(url: str):
+    driver = get_driver()
+    try:
+        driver.get(url)
+        WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+        source = driver.page_source
+    except Exception as e:
+        logger.error(f"Error fetching {url}: {e}")
+        source = None
+    driver.quit()
+    return source
+
+def concurrent_scrap_url(url: str, chain_description: LLMChain):
+    try:
+        logger.info(f"Processing {url}")
+        page_source = concurrent_fetch_url_selenium(url)
+        if page_source is None:
+            return None, []
+
+        soup = BeautifulSoup(page_source, 'html.parser')
+        # Get the Markdown content
+        # Remove images, videos, SVGs, and other media elements; also nav
+        for media_tag in soup.find_all(['img', 'video', 'svg', 'audio', 'source', 'track', 'picture', 'nav']):
+            media_tag.decompose()
+
+        # Remove the footer (assuming it's in a <footer> tag or has a class/id like 'footer')
+        for footer_tag in soup.find_all(['footer', {'class': 'footer'}, {'id': 'footer'}]):
+            footer_tag.decompose()
+
+        # Remove sections with class="section-page-alert"
+        for page_alert in soup.find_all('div', class_='section-page-alert'):
+            page_alert.decompose()
+
+        # Remove sections with class="cta-subscribe"
+        for cta_subscribe in soup.find_all(class_='cta-subscribe'):
+            cta_subscribe.decompose()
+            
+
+        html_content = str(soup)
+        h = html2text.HTML2Text()
+        markdown_content = h.handle(html_content)
+
+        # Remove the prefix
+        markdown_content = remove_prefix_text(markdown_content)
+
+        # Get the title
+        titles = re.findall(r'^#\s(.+)$', markdown_content, re.MULTILINE)
+        title = titles[0].strip() 
+
+        # Get description
+        para = extract_first_n_paragraphs(markdown_content, num_para=2)
+        description = chain_description.predict(context=para)
+        
+        # Put the markdown content into a Document object
+        doc = Document(page_content=markdown_content, metadata={
+            "source": url, 
+            "title": title, 
+            "description": description, 
+            "source_type": "main"})
+
+        # Get YouTube docs
+        video_tags = soup.find_all('a', href=True, class_="techtalk-video-lightbox")
+        u_tube_docs = get_youtube_docs(video_tags, chain_description)    
+
+        return doc, u_tube_docs
+    except Exception as e:
+        logger.error(f"Error processing {url}: {e}")
+        return None, []
+
 def scrap_chain_link() -> Tuple[List[Dict], List[Dict]]:
     """
     Scrap all the urls from https://chain.link/ and save the main docs and you tube docs to disk
@@ -270,42 +326,33 @@ def scrap_chain_link() -> Tuple[List[Dict], List[Dict]]:
     """
 
     raw_urls = get_all_suburls("https://chain.link/")
-    
-    # Only keep urls that start with https://chain.link
-    raw_urls = [url for url in raw_urls if url.startswith("https://chain.link")]
-
-    # add chain.link/faqs if not in raw_urls
+    raw_urls = list(set([url for url in raw_urls if url.startswith("https://chain.link")]))
     if "https://chain.link/faqs" not in raw_urls:
         raw_urls.append("https://chain.link/faqs")
 
-    # Remove duplicates
-    raw_urls = list(set(raw_urls))
-
-    # Process urls
     all_main_docs = []
     all_you_tube_docs = []
-
-    # Get description chain
     chain_description = get_description_chain()
 
-    for url in tqdm(raw_urls, total=len(raw_urls)):
-        try:
-            logger.info(f"Processing {url}")
-            main_doc, you_tube_docs = scrap_url(url, chain_description)
-            all_main_docs.append(main_doc)
-            all_you_tube_docs.extend(you_tube_docs)
-            logger.info(f"Processed {url}")
-        except Exception as e:
-            logger.error(f"Error processing {url}: {e}")
-
-    # Make sure the output directory exists
-    Path("./data").mkdir(parents=True, exist_ok=True)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+        future_to_url = {executor.submit(concurrent_scrap_url, url, chain_description): url for url in raw_urls}
+        for future in concurrent.futures.as_completed(future_to_url):
+            url = future_to_url[future]
+            try:
+                main_doc, you_tube_docs = future.result()
+                if main_doc:
+                    all_main_docs.append(main_doc)
+                if you_tube_docs:
+                    all_you_tube_docs.extend(you_tube_docs)
+                logger.info(f"Processed {url}")
+            except Exception as e:
+                logger.error(f"Error processing {url}: {e}")
 
     # Save to disk as pickle
-    with open(f"./data/chain_link_main_docs_{datetime.now().strftime('%Y-%m-%d')}.pkl", "wb") as f:
+    with open(f"{DATA_DIR}/chain_link_main_documents.pkl", "wb") as f:
         pickle.dump(all_main_docs, f)
 
-    with open(f"./data/chain_link_you_tube_docs_{datetime.now().strftime('%Y-%m-%d')}.pkl", "wb") as f:
+    with open(f"{DATA_DIR}/chain_link_you_tube_documents.pkl", "wb") as f:
         pickle.dump(all_you_tube_docs, f)
 
     logger.info("Done")

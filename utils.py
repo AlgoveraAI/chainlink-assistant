@@ -11,7 +11,8 @@ from langchain.callbacks.manager import AsyncCallbackManager
 from schemas import ChatResponse, Sender, MessageType
 
 USERNAMES = [
-    "algovera_admin_08062023",
+    "algovera_admin",
+    "1af26bc619c4adf5e3f9a1806879e434ab681281c30528d2a30691226b4f7051",
 ]
 
 def createLogHandler(job_name, log_file="logs.log"):
@@ -90,65 +91,6 @@ async def get_websocket_manager(websocket: WebSocket):
         yield manager
     finally:
         await manager.disconnect(websocket)
-
-
-def get_folders(firebase, context_uuids: List[str]) -> List[str]:
-    folders = [
-        f"{firebase.get_context(context)['folder']}/{v}"
-        for context in context_uuids
-        for _, v in json.loads(firebase.get_context(context)["vecdb_uuids"]).items()
-    ]
-    return folders
-
-
-def calculate_credits(cb, margin=0.7, costpercredit=0.01):
-    total_tokens = cb.total_tokens
-    cost = cb.total_cost
-
-    cost = cost * (1 + margin) / costpercredit
-    final_cost = math.ceil(cost)
-
-    if final_cost < 1:
-        final_cost = 1
-
-    if total_tokens < 1:
-        total_tokens = -1
-    return total_tokens, final_cost
-
-
-def get_chat_history(memory_uuid, firebase, new=False):
-    if new:
-        memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True,
-            input_key="question",
-            output_key="answer",
-        )
-        return memory
-
-    else:
-        memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True,
-            input_key="question",
-            output_key="answer",
-        )
-        chats = firebase.get_memory(memory_uuid)["chat_history"]
-
-        assert len(chats) > 0, "No chat history found"
-
-        for i in range(len(chats)):
-            if (i == 0) or (i % 2 == 0):
-                memory.chat_memory.add_user_message(chats[i])
-            else:
-                memory.chat_memory.add_ai_message(chats[i])
-
-        return memory
-
-
-def set_chat_history(memory_uuid, uid, chat_history, firebase):
-    chats = [e.content.strip() for e in chat_history]
-    firebase.set_memory(memory_uuid, {"chat_history": chats, "uid": uid})
 
 
 def get_stream_manager(manager):
