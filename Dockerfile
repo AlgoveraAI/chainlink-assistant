@@ -1,5 +1,4 @@
-# Use the official Python 3.10 image as a base image
-FROM python:3.10-slim
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.10
 
 # Install essential libraries for Selenium, Chrome, the GPG key, and libxcb
 RUN apt-get update && apt-get install -y \
@@ -47,15 +46,19 @@ RUN wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/116.0.5845
     && rm -r chromedriver-linux64 \
     && rm chromedriver-linux64.zip
 
-# Install Python dependencies
-COPY requirements.txt /tmp/
-RUN pip install -r /tmp/requirements.txt
 
-# Create a directory for our application and set it as working directory
-WORKDIR /app
+WORKDIR /chainlink-assistant
 
-# Copy over the rest of our application
-COPY . /app/
+COPY ./chat /chainlink-assistant/chat
+COPY ./ingest /chainlink-assistant/ingest
+COPY ./search /chainlink-assistant/search
+COPY ./*.py /chainlink-assistant/
+COPY ./requirements.txt /chainlink-assistant/requirements.txt
+COPY ./.env /chainlink-assistant/
 
-# Run Jupyter Lab by default when the container starts
-CMD ["jupyter", "lab", "--ip=0.0.0.0", "--allow-root", "--NotebookApp.token=''", "--NotebookApp.password=''"]
+RUN pip install --upgrade -r /chainlink-assistant/requirements.txt 
+#--no-cache-dir 
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
