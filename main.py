@@ -23,9 +23,9 @@ new_ingest_time = None
 templates = Jinja2Templates(directory="templates")
 try:
     chainlink_search_retrevier = get_search_retriever()
-except:
+except Exception as err:
     chainlink_search_retrevier = None
-    logger.info("Search retriever not loaded")
+    logger.info("Search retriever not loaded: " + str(err))
 
 load_dotenv()
 
@@ -121,6 +121,8 @@ def search(
     # if search retriever is not loaded raise error
     if chainlink_search_retrevier is None:
         raise HTTPException(status_code=500, detail="Search retriever not loaded")
+
+    logger.info("General Search")
 
     # Check if new ingest and if its been 3 hours reload the search retriever
     if new_ingest:

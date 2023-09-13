@@ -29,7 +29,7 @@ def get_description_chain():
         ]
     )
 
-    llm = ChatOpenAI(temperature=0.)
+    llm = ChatOpenAI(temperature=0.) #, request_timeout=120)
     chain = LLMChain(llm=llm, prompt=PROMPT)
 
     return chain
