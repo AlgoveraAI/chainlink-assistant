@@ -1,4 +1,4 @@
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.10
+FROM python:3.10-slim
 
 # Install essential libraries for Selenium, Chrome, the GPG key, and libxcb
 RUN apt-get update && apt-get install -y \
@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     libpango-1.0-0 \
     libcairo2 \
     libsoundio2 \
+    git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -49,14 +50,16 @@ RUN wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/116.0.5845
 
 WORKDIR /chainlink-assistant
 
+COPY ./templates /chainlink-assistant/templates
 COPY ./chat /chainlink-assistant/chat
 COPY ./ingest /chainlink-assistant/ingest
 COPY ./search /chainlink-assistant/search
 COPY ./*.py /chainlink-assistant/
 COPY ./requirements.txt /chainlink-assistant/requirements.txt
 COPY ./.env /chainlink-assistant/
+COPY ./data /chainlink-assistant/data
 
-RUN pip install --upgrade -r /chainlink-assistant/requirements.txt 
+RUN pip install -r /chainlink-assistant/requirements.txt 
 #--no-cache-dir 
 
 EXPOSE 8000
