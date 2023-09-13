@@ -14,7 +14,7 @@ from ingest.utils import remove_prefix_text, extract_first_n_paragraphs, get_des
 
 logger = get_logger(__name__)
 MAX_WORKERS = 10
-driver = get_driver()
+driver = None
 
 def close_popup(driver):
     try:
@@ -174,6 +174,8 @@ def process_blog_entry(blog):
         return None
 
 def scrap_blogs():
+    global driver
+    driver = get_driver()
     urls = get_blog_urls()
 
     # Use concurrent.futures to parallelize the fetching of URLs

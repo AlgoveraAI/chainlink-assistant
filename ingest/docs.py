@@ -27,7 +27,7 @@ REQUEST_DELAY = 0.1
 SESSION = requests.Session()
 
 # Get the driver
-driver = get_driver()
+driver = None
 
 def filter_urls_by_base_url(urls:List, base_url:str):
     """
@@ -282,6 +282,9 @@ def refine_docs(docs:List[Document]):
     return docs_filtered
 
 def scrap_docs():
+    global driver
+    driver = get_driver()
+    
     all_urls = get_all_suburls("https://docs.chain.link/")
     all_urls = sorted(list(set(all_urls)))
 

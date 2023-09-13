@@ -23,7 +23,6 @@ from langchain.chains import LLMChain
 from langchain.docstore.document import Document
 from langchain.document_loaders import YoutubeLoader
 
-
 from config import DATA_DIR, get_logger
 from ingest.utils import get_description_chain, remove_prefix_text, extract_first_n_paragraphs, get_driver
 
@@ -36,8 +35,7 @@ MAX_WORKERS = 10
 TIMEOUT = 10
 SESSION = requests.Session()
 
-driver = get_driver()
-
+driver = None
 
 def filter_urls_by_base_url(urls:List, base_url:str):
     """
@@ -324,6 +322,8 @@ def scrap_chain_link() -> Tuple[List[Dict], List[Dict]]:
     Scrap all the urls from https://chain.link/ and save the main docs and you tube docs to disk
     return: Tuple[List[Dict], List[Dict]]
     """
+    global driver
+    driver = get_driver()
 
     raw_urls = get_all_suburls("https://chain.link/")
     raw_urls = list(set([url for url in raw_urls if url.startswith("https://chain.link")]))
