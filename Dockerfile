@@ -57,7 +57,7 @@ COPY ./search /chainlink-assistant/search
 COPY ./*.py /chainlink-assistant/
 COPY ./requirements.txt /chainlink-assistant/requirements.txt
 COPY ./.env /chainlink-assistant/
-COPY ./data /chainlink-assistant/data
+#COPY ./data /chainlink-assistant/data
 
 RUN pip install -r /chainlink-assistant/requirements.txt 
 #--no-cache-dir 

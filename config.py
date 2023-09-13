@@ -34,8 +34,8 @@ logger.info(f"SO_KEY: {os.getenv('SO_KEY')}")
 os.environ['SO_KEY'] = os.getenv('SO_KEY')
 
 # Set the root directory
-ROOT_DIR = os.getenv('ROOT_DIR')
-DATA_DIR = ROOT_DIR / 'data'
+ROOT_DIR = Path(os.getenv('ROOT_DIR'))
+DATA_DIR = ROOT_DIR / "data"
 
 # Make sure the data directory exists
 DATA_DIR.mkdir(parents=True, exist_ok=True)
