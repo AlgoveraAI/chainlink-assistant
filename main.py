@@ -4,6 +4,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from fastapi.templating import Jinja2Templates
 from fastapi import FastAPI, WebSocket, Request, Depends, WebSocketDisconnect, BackgroundTasks, status, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from ingest_script import ingest_task
 from schemas import ChatInput, ChatResponse, Sender, MessageType, SearchRequestSchema, SearchResponseSchema
 from utils import (
@@ -14,6 +15,17 @@ from utils import (
 from chat.get_chain_no_mem import get_answer
 from chat.utils import get_search_retriever
 from config import get_logger
+import os
+
+# Secure endpoints using a bearer token
+bearer_scheme = HTTPBearer()
+BEARER_TOKEN = os.environ.get("BEARER_TOKEN")
+assert BEARER_TOKEN is not None
+
+def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+    if credentials.scheme != "Bearer" or credentials.credentials != BEARER_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    return credentials
 
 # Global variables
 logger = get_logger(__name__)
@@ -29,7 +41,7 @@ except Exception as err:
 
 load_dotenv()
 
-app = FastAPI()
+app = FastAPI(dependencies=[Depends(validate_token)])
 
 @app.get("/")
 def read_root():
