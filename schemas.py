@@ -44,7 +44,7 @@ class SearchType(str, Enum):
 class SearchRequestSchema(BaseModel):
     query: str
     type_: SearchType = SearchType.all
-    
+
 
 class SearchResponseSchema(BaseModel):
     results: List[Dict[str, str]]

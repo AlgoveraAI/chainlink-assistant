@@ -13,6 +13,7 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
 )
 
+
 def get_description_chain():
     system_template = """
     Please summarize the context below in one sentence (no more than 15 words). This will be used as the description of the article in the search results.
@@ -29,7 +30,7 @@ def get_description_chain():
         ]
     )
 
-    llm = ChatOpenAI(temperature=0.) #, request_timeout=120)
+    llm = ChatOpenAI(temperature=0.0, request_timeout=90)
     chain = LLMChain(llm=llm, prompt=PROMPT)
 
     return chain
@@ -37,7 +38,7 @@ def get_description_chain():
 
 def remove_prefix_text(markdown):
     # Split the content at the first title
-    parts = re.split(r'^(#\s.+)$', markdown, maxsplit=1, flags=re.MULTILINE)
+    parts = re.split(r"^(#\s.+)$", markdown, maxsplit=1, flags=re.MULTILINE)
 
     # If a split occurred, then take the content from the first title onward
     new_text = parts[-2] + parts[-1] if len(parts) > 1 else markdown
@@ -48,15 +49,15 @@ def remove_prefix_text(markdown):
 def extract_first_n_paragraphs(content, num_para=2):
 
     # Split by two newline characters to denote paragraphs
-    paragraphs = content.split('\n\n')
-    
+    paragraphs = content.split("\n\n")
+
     # Return the first num_para paragraphs or whatever is available
-    return '\n\n'.join(paragraphs[:num_para])
+    return "\n\n".join(paragraphs[:num_para])
 
 
 def get_driver():
     # Path to your chromedriver (change this to your path)
-    CHROMEDRIVER_PATH = '/usr/local/bin/chromedriver'
+    CHROMEDRIVER_PATH = "/usr/local/bin/chromedriver"
 
     # Set up Chrome options
     chrome_options = Options()
@@ -67,7 +68,7 @@ def get_driver():
     # Multiple potential paths for Chrome binary
     CHROME_PATHS = [
         "/opt/google/chrome/chrome-linux64/chrome",
-        "/opt/google/chrome/chrome/chrome"
+        "/opt/google/chrome/chrome/chrome",
     ]
 
     # Set the binary location to the first existing path
@@ -81,7 +82,7 @@ def get_driver():
         try:
             CHROMEDRIVER_PATH = ChromeDriverManager().install()
         except:
-            CHROMEDRIVER_PATH = '/opt/homebrew/bin/chromedriver'
+            CHROMEDRIVER_PATH = "/opt/homebrew/bin/chromedriver"
 
     # Set up the webdriver using the determined path
     s = Service(CHROMEDRIVER_PATH)

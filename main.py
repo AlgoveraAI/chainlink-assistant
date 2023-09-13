@@ -1,17 +1,28 @@
 import json
-import logging
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi.templating import Jinja2Templates
-from fastapi import FastAPI, WebSocket, Request, Depends, WebSocketDisconnect, BackgroundTasks, status, HTTPException
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    Request,
+    Depends,
+    WebSocketDisconnect,
+    BackgroundTasks,
+    status,
+    HTTPException,
+)
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from ingest_script import ingest_task
-from schemas import ChatInput, ChatResponse, Sender, MessageType, SearchRequestSchema, SearchResponseSchema
-from utils import (
-    get_websocket_manager,
-    ConnectionManager,
-    USERNAMES
+from schemas import (
+    ChatInput,
+    ChatResponse,
+    Sender,
+    MessageType,
+    SearchRequestSchema,
+    SearchResponseSchema,
 )
+from utils import get_websocket_manager, ConnectionManager, USERNAMES
 from chat.get_chain_no_mem import get_answer
 from chat.utils import get_search_retriever
 from config import get_logger
@@ -22,10 +33,12 @@ bearer_scheme = HTTPBearer()
 BEARER_TOKEN = os.environ.get("BEARER_TOKEN")
 assert BEARER_TOKEN is not None
 
+
 def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     if credentials.scheme != "Bearer" or credentials.credentials != BEARER_TOKEN:
         raise HTTPException(status_code=401, detail="Invalid or missing token")
     return credentials
+
 
 # Global variables
 logger = get_logger(__name__)
@@ -43,6 +56,7 @@ load_dotenv()
 
 app = FastAPI(dependencies=[Depends(validate_token)])
 
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -55,6 +69,7 @@ def ingest(background_tasks: BackgroundTasks):
     new_ingest = True
     new_ingest_time = datetime.now()
     return {"message": "Ingestion started."}
+
 
 @app.get("/chainlink")
 async def get_chainlink(request: Request):
@@ -82,9 +97,7 @@ async def chat_endpoint_chainlink(
                 verified = True
 
             resp = ChatResponse(
-                sender=Sender.YOU, 
-                message=message.message, 
-                type=MessageType.STREAM
+                sender=Sender.YOU, message=message.message, type=MessageType.STREAM
             )
             await manager.broadcast(resp)
 
@@ -150,7 +163,9 @@ def search(
     logger.info(job_dict)
 
     # Get search results
-    results = chainlink_search_retrevier.get_relevant_documents(query=job_dict["query"], type_=job_dict["type_"])
+    results = chainlink_search_retrevier.get_relevant_documents(
+        query=job_dict["query"], type_=job_dict["type_"]
+    )
     logger.info(f"Retrieved {len(results)} documents")
     logger.info(results)
 

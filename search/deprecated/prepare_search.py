@@ -4,7 +4,11 @@ from tqdm import tqdm
 from datetime import datetime
 from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+from langchain.prompts import (
+    ChatPromptTemplate,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+)
 from config import get_logger
 
 logger = get_logger(__name__)
@@ -26,25 +30,25 @@ PROMPT = ChatPromptTemplate.from_messages(
     ]
 )
 
-llm = ChatOpenAI(temperature=0.)
+llm = ChatOpenAI(temperature=0.0)
 chain = LLMChain(llm=llm, prompt=PROMPT)
 
 
 def extract_first_n_paragraphs(content, num_para=2):
 
     # Split by two newline characters to denote paragraphs
-    paragraphs = content.split('\n\n')
-    
+    paragraphs = content.split("\n\n")
+
     # Return the first num_para paragraphs or whatever is available
-    return '\n\n'.join(paragraphs[:num_para])
+    return "\n\n".join(paragraphs[:num_para])
 
 
 def prepare_search_docs(doc_path, blog_path, num_para=2):
-    with open(doc_path, 'rb') as f:
+    with open(doc_path, "rb") as f:
         docs = pickle.load(f)
-    
-    with open(blog_path, 'rb') as f:
-        blogs = pickle.load(f)  
+
+    with open(blog_path, "rb") as f:
+        blogs = pickle.load(f)
 
     blog_docs = []
     for blog in tqdm(blogs, total=len(blogs)):
@@ -72,8 +76,8 @@ def prepare_search_docs(doc_path, blog_path, num_para=2):
 
         para = extract_first_n_paragraphs(doc.page_content, num_para=num_para)
 
-        description = chain.predict(context=para)        
-        
+        description = chain.predict(context=para)
+
         metadata = {
             "title": title,
             "description": description,
@@ -88,10 +92,14 @@ def prepare_search_docs(doc_path, blog_path, num_para=2):
         tech_docs.append(doc)
 
     # Save the documents
-    with open(f"./data/search_blogdocs_{datetime.now().strftime('%Y-%m-%d')}.pkl", 'wb') as f:
+    with open(
+        f"./data/search_blogdocs_{datetime.now().strftime('%Y-%m-%d')}.pkl", "wb"
+    ) as f:
         pickle.dump(blog_docs, f)
 
-    with open(f"./data/search_techdocs_{datetime.now().strftime('%Y-%m-%d')}.pkl", 'wb') as f:
+    with open(
+        f"./data/search_techdocs_{datetime.now().strftime('%Y-%m-%d')}.pkl", "wb"
+    ) as f:
         pickle.dump(tech_docs, f)
 
     return blog_docs, tech_docs

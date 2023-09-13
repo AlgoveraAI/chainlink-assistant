@@ -115,7 +115,9 @@ async def get_answer_memory(question, memory, max_tokens=14_000, manager=None):
     )
 
     # Get the stream chain
-    chain_stream = get_streaming_chain(manager=manager, chain=base_chain, workflow=workflow)
+    chain_stream = get_streaming_chain(
+        manager=manager, chain=base_chain, workflow=workflow
+    )
 
     resp = ChatResponse(
         sender=Sender.BOT, message=f"Generating Answer", type=MessageType.STATUS
