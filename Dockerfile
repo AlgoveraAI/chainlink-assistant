@@ -28,6 +28,9 @@ RUN apt-get update && apt-get install -y \
 
 RUN apt-get update && apt-get install -y xvfb
 
+# macos specific
+RUN apt-get install gcc python3-dev -y
+
 ENV DISPLAY=:99
 
 # Create the directory for Chrome
@@ -57,7 +60,7 @@ COPY ./search /chainlink-assistant/search
 COPY ./*.py /chainlink-assistant/
 COPY ./requirements.txt /chainlink-assistant/requirements.txt
 COPY ./.env /chainlink-assistant/
-#COPY ./data /chainlink-assistant/data
+COPY ./data /chainlink-assistant/data
 
 RUN pip install -r /chainlink-assistant/requirements.txt 
 #--no-cache-dir 

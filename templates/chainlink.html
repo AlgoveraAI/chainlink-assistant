@@ -54,7 +54,8 @@
         // var endpoint = "wss://streamingprod.algoverai.link/chat_chainlink";
         // var endpoint = "ws://a69484b80e8f84c5b8e408195d4eeec9-1952406453.us-east-1.elb.amazonaws.com/chat";
         var endpoint = "ws://localhost:8000/chat_chainlink";
-        var ws = new WebSocket(endpoint);
+        // var ws = new WebSocket(endpoint);
+        var ws = new WebSocket(endpoint, ["access_token", "1234"]); 
         // Receive message from server word by word. Display the words as they are received.
         ws.onmessage = function (event) {
             var messages = document.getElementById('messages');
