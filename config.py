@@ -31,10 +31,6 @@ if not os.path.exists(dotenv_path):
     raise ValueError("No .env file found")
 
 load_dotenv(dotenv_path)
-logger.info(f"SO_KEY: {os.getenv('SO_KEY')}")
-
-# Set the stackoverflow key
-os.environ["SO_KEY"] = os.getenv("SO_KEY")
 
 # Set the root directory
 ROOT_DIR = Path(os.getenv("ROOT_DIR"))

@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 from dotenv import load_dotenv
 from fastapi.templating import Jinja2Templates
 from fastapi import (
@@ -8,12 +7,12 @@ from fastapi import (
     Request,
     Depends,
     WebSocketDisconnect,
-    BackgroundTasks,
+    # BackgroundTasks,
     status,
     HTTPException,
 )
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from ingest_script import ingest_task
+# from ingest_script import ingest_task
 from schemas import (
     ChatInput,
     ChatResponse,
@@ -24,7 +23,7 @@ from schemas import (
 )
 from utils import get_websocket_manager, ConnectionManager, USERNAMES
 from chat.get_chain_no_mem import get_answer
-from chat.utils import get_search_retriever
+from chat.utils import get_search_retriever, get_retriever_chain
 from config import get_logger
 import os
 
@@ -43,16 +42,26 @@ def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_sc
 # Global variables
 logger = get_logger(__name__)
 
-new_ingest = False
-new_ingest_time = None
 templates = Jinja2Templates(directory="templates")
-try:
-    chainlink_search_retrevier = get_search_retriever()
-except Exception as err:
-    chainlink_search_retrevier = None
-    logger.info("Search retriever not loaded: " + str(err))
+
+def initial_setup():
+    try:
+        chainlink_search_retrevier = get_search_retriever()
+    except Exception as err:
+        chainlink_search_retrevier = None
+        logger.info("Search retriever not loaded: " + str(err))
+
+    try:
+        retriever, chain = get_retriever_chain()
+    except Exception as err:
+        retriever = None
+        chain = None
+        logger.info("Retriever chain not loaded: " + str(err))
+
+    return chainlink_search_retrevier, retriever, chain
 
 load_dotenv()
+chainlink_search_retrevier, retriever, chain = initial_setup()
 
 app = FastAPI(dependencies=[Depends(validate_token)])
 
@@ -62,13 +71,13 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.post("/ingest")
-def ingest(background_tasks: BackgroundTasks):
-    background_tasks.add_task(ingest_task)
-    global new_ingest, new_ingest_time
-    new_ingest = True
-    new_ingest_time = datetime.now()
-    return {"message": "Ingestion started."}
+# @app.post("/ingest")
+# def ingest(background_tasks: BackgroundTasks):
+#     background_tasks.add_task(ingest_task)
+#     global new_ingest, new_ingest_time
+#     new_ingest = True
+#     new_ingest_time = datetime.now()
+#     return {"message": "Ingestion started."}
 
 
 @app.get("/chainlink")
@@ -108,7 +117,7 @@ async def chat_endpoint_chainlink(
             await manager.broadcast(start_resp)
 
             logger.info("Getting answer without memory")
-            answer = await get_answer(message.message, manager=manager)
+            answer = await get_answer(message.message, manager=manager, retriever=retriever, base_chain=chain)
             logger.info(answer)
 
             end_resp = ChatResponse(
@@ -148,17 +157,6 @@ def search(
         raise HTTPException(status_code=500, detail="Search retriever not loaded")
 
     logger.info("General Search")
-
-    # Check if new ingest and if its been 3 hours reload the search retriever
-    if new_ingest:
-        time_diff = datetime.now() - new_ingest_time
-        if time_diff.seconds > 10800:
-            logger.info("Reloading search retriever")
-            chainlink_search_retrevier = get_search_retriever()
-            new_ingest = False
-            new_ingest_time = None
-
-    logger.info("General Search")
     job_dict = job.dict()
     logger.info(job_dict)
 
@@ -171,3 +169,14 @@ def search(
 
     # Return results
     return SearchResponseSchema(results=results)
+
+
+@app.post('/refresh')
+def refresh():
+    global chainlink_search_retrevier, retriever, chain
+    try:
+        chainlink_search_retrevier, retriever, chain = initial_setup()
+        return {"message": "Refreshed."}
+    except Exception as err:
+        logger.info("Refresh failed: " + str(err))
+        return {"message": "Refresh failed: " + str(err)}

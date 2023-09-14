@@ -96,11 +96,8 @@ def process_documents(question, chain, retriever, max_tokens=14_000):
     return batches, num_llm_calls, workflow
 
 
-async def get_answer(question, manager, max_tokens=14_000):
+async def get_answer(question, manager, retriever, base_chain,max_tokens=14_000):
     """Get an answer to a question."""
-
-    # Get the retriever chain
-    retriever, base_chain = get_retriever_chain()
 
     # Send a status message
     resp = ChatResponse(
