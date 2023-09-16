@@ -7,13 +7,13 @@ COPY ../chat /chainlink-assistant/chat
 COPY ../search /chainlink-assistant/search
 COPY ../*.py /chainlink-assistant/
 COPY ../requirements.txt /chainlink-assistant/requirements.txt
-COPY ./.env /chainlink-assistant/
-# ENABLE FOR DEV IMAGE
+
+# FOR DEV MODE
 #COPY ../data /chainlink-assistant/data
+#PASS env file when running the image: docker run -p8000:8000 --env-file ./.env  chainlink-assistant
 
 RUN pip install -r /chainlink-assistant/requirements.txt 
 #--no-cache-dir 
-
 EXPOSE 8000
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

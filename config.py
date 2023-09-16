@@ -1,6 +1,5 @@
 import os
 import logging
-from dotenv import load_dotenv
 from pathlib import Path
 
 
@@ -22,15 +21,7 @@ def get_logger(name: str, level: int = logging.INFO) -> logging.Logger:
     logger.addHandler(stream_handler)
     return logger
 
-
 logger = get_logger(__name__)
-
-dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
-# Check file exists
-if not os.path.exists(dotenv_path):
-    raise ValueError("No .env file found")
-
-load_dotenv(dotenv_path)
 
 # Set the root directory
 ROOT_DIR = Path(os.getenv("ROOT_DIR"))
@@ -40,13 +31,13 @@ DATA_DIR = ROOT_DIR / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 if not os.environ.get("MAX_THREADS"):
-    logger.warning("MAX_THREADS not set in .env file. Defaulting to 1.")
+    logger.warning("MAX_THREADS not set. Defaulting to 1.")
     MAX_THREADS = 4
 else:
     MAX_THREADS = int(os.environ.get("MAX_THREADS"))
 
 if not os.environ.get("WS_HOST"):
-    logger.warning("WS_HOST not set in .env file. Defaulting to ws://localhost:8000")
+    logger.warning("WS_HOST not set. Defaulting to ws://localhost:8000")
     WS_HOST = "ws://localhost:8000"
 else:
     WS_HOST = os.environ.get("WS_HOST")
