@@ -27,10 +27,11 @@ from chat.utils import get_search_retriever, get_retriever_chain
 from config import get_logger
 import os
 
+### Secure disabled for FastAPI issues with protected ws ###
 # Secure endpoints using a bearer token
-bearer_scheme = HTTPBearer()
-BEARER_TOKEN = os.environ.get("BEARER_TOKEN")
-assert BEARER_TOKEN is not None
+#bearer_scheme = HTTPBearer()
+#BEARER_TOKEN = os.environ.get("BEARER_TOKEN")
+#assert BEARER_TOKEN is not None
 
 
 def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
@@ -63,8 +64,7 @@ def initial_setup():
 load_dotenv()
 chainlink_search_retrevier, retriever, chain = initial_setup()
 
-app = FastAPI(dependencies=[Depends(validate_token)])
-
+app = FastAPI()
 
 @app.get("/")
 def read_root():
