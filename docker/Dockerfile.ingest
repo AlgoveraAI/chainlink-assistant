@@ -53,12 +53,12 @@ RUN wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/116.0.5845
 
 WORKDIR /chainlink-assistant
 
-COPY ./ingest /chainlink-assistant/ingest
-COPY ./chat /chainlink-assistant/chat
-COPY ./search /chainlink-assistant/search
-COPY ./*.py /chainlink-assistant/
-COPY ./requirements.txt /chainlink-assistant/requirements.txt
-COPY ./.env /chainlink-assistant/
+COPY ../ingest /chainlink-assistant/ingest
+COPY ../chat /chainlink-assistant/chat
+COPY ../search /chainlink-assistant/search
+COPY ../*.py /chainlink-assistant/
+COPY ../requirements.txt /chainlink-assistant/requirements.txt
+COPY ../.env /chainlink-assistant/
 
 RUN pip install -r /chainlink-assistant/requirements.txt 
 #--no-cache-dir 
