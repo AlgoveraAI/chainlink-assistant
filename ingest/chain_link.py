@@ -23,7 +23,7 @@ from langchain.chains import LLMChain
 from langchain.docstore.document import Document
 from langchain.document_loaders import YoutubeLoader
 
-from config import DATA_DIR, get_logger
+from config import DATA_DIR, get_logger, MAX_THREADS
 from ingest.utils import (
     get_description_chain,
     remove_prefix_text,
@@ -34,9 +34,7 @@ from ingest.utils import (
 logger = get_logger(__name__)
 
 # Settings for requests
-MAX_THREADS = 10
 REQUEST_DELAY = 0.1
-MAX_WORKERS = 10
 TIMEOUT = 10
 SESSION = requests.Session()
 
@@ -376,6 +374,8 @@ def scrap_chain_link() -> Tuple[List[Dict], List[Dict]]:
     all_you_tube_docs = []
     chain_description = get_description_chain()
 
+    progress_bar = tqdm(total=len(raw_urls), desc="Processing URLs", position=0, leave=True)
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         future_to_url = {
             executor.submit(concurrent_scrap_url, url, chain_description): url
@@ -389,9 +389,11 @@ def scrap_chain_link() -> Tuple[List[Dict], List[Dict]]:
                     all_main_docs.append(main_doc)
                 if you_tube_docs:
                     all_you_tube_docs.extend(you_tube_docs)
-                logger.info(f"Processed {url}")
             except Exception as e:
                 logger.error(f"Error processing {url}: {e}")
+            
+            # Update the tqdm progress bar
+            progress_bar.update(1)
 
     # Save to disk as pickle
     with open(f"{DATA_DIR}/chain_link_main_documents.pkl", "wb") as f:

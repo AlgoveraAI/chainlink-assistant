@@ -19,7 +19,9 @@ key = os.getenv("SO_KEY")
 tag = "chainlink"
 pagesize = 99
 from_date = "1609459200"
-to_date = "1685577600"
+
+# Today's int date
+to_date = int(datetime.now().timestamp())
 
 # https://api.stackexchange.com/docs/questions
 def get_questions(tag, page, pagesize, from_date, to_date, key, access_token):

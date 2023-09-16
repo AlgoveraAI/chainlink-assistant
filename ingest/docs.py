@@ -16,7 +16,7 @@ from typing import List, Optional, Set
 from requests.exceptions import RequestException
 from langchain.docstore.document import Document
 
-from config import DATA_DIR, get_logger
+from config import DATA_DIR, get_logger, MAX_THREADS
 from ingest.utils import (
     remove_prefix_text,
     extract_first_n_paragraphs,
@@ -27,7 +27,6 @@ from ingest.utils import (
 logger = get_logger(__name__)
 
 # Settings for requests
-MAX_THREADS = 10
 REQUEST_DELAY = 0.1
 SESSION = requests.Session()
 

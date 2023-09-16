@@ -9,7 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from langchain.docstore.document import Document
 from concurrent.futures import ProcessPoolExecutor
-from config import get_logger, ROOT_DIR, DATA_DIR
+from config import get_logger, DATA_DIR, MAX_THREADS
 from ingest.utils import (
     remove_prefix_text,
     extract_first_n_paragraphs,
@@ -18,7 +18,6 @@ from ingest.utils import (
 )
 
 logger = get_logger(__name__)
-MAX_WORKERS = 10
 driver = None
 
 
@@ -236,14 +235,14 @@ def scrap_blogs():
     urls = get_blog_urls()
 
     # Use concurrent.futures to parallelize the fetching of URLs
-    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+    with ProcessPoolExecutor(max_workers=MAX_THREADS) as executor:
         soups = list(tqdm(executor.map(fetch_url_content, urls), total=len(urls)))
 
     unsuccessful_urls = [url for url, soup in soups if not soup]
     successful_soups = [(url, soup) for url, soup in soups if soup]
 
     # Use concurrent.futures to parallelize the markdown conversion
-    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+    with ProcessPoolExecutor(max_workers=MAX_THREADS) as executor:
         blogs = list(
             tqdm(executor.map(get_blog, successful_soups), total=len(successful_soups))
         )

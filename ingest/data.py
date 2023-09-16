@@ -10,14 +10,13 @@ from bs4 import BeautifulSoup
 from langchain.docstore.document import Document
 from concurrent.futures import ThreadPoolExecutor
 
-from config import DATA_DIR, get_logger
+from config import DATA_DIR, get_logger, MAX_THREADS
 from ingest.utils import get_driver
 
 # Get the logger
 logger = get_logger(__name__)
 
 # Settings for requests
-MAX_THREADS = 10
 REQUEST_DELAY = 0.1
 SESSION = requests.Session()
 

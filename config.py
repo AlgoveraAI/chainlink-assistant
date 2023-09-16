@@ -38,3 +38,9 @@ DATA_DIR = ROOT_DIR / "data"
 
 # Make sure the data directory exists
 DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+if not os.environ.get("MAX_THREADS"):
+    logger.warning("MAX_THREADS not set in .env file. Defaulting to 1.")
+    MAX_THREADS = 4
+else:
+    MAX_THREADS = int(os.environ.get("MAX_THREADS"))
