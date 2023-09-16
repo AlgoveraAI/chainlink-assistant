@@ -44,3 +44,9 @@ if not os.environ.get("MAX_THREADS"):
     MAX_THREADS = 4
 else:
     MAX_THREADS = int(os.environ.get("MAX_THREADS"))
+
+if not os.environ.get("WS_HOST"):
+    logger.warning("WS_HOST not set in .env file. Defaulting to ws://localhost:8000")
+    WS_HOST = "ws://localhost:8000"
+else:
+    WS_HOST = os.environ.get("WS_HOST")
