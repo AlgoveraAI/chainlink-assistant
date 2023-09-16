@@ -33,11 +33,10 @@ import os
 #BEARER_TOKEN = os.environ.get("BEARER_TOKEN")
 #assert BEARER_TOKEN is not None
 
-
-def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
-    if credentials.scheme != "Bearer" or credentials.credentials != BEARER_TOKEN:
-        raise HTTPException(status_code=401, detail="Invalid or missing token")
-    return credentials
+#def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+#    if credentials.scheme != "Bearer" or credentials.credentials != BEARER_TOKEN:
+#        raise HTTPException(status_code=401, detail="Invalid or missing token")
+#    return credentials
 
 
 # Global variables
