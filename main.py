@@ -71,15 +71,6 @@ def read_root():
     return {"Hello": "World"}
 
 
-# @app.post("/ingest")
-# def ingest(background_tasks: BackgroundTasks):
-#     background_tasks.add_task(ingest_task)
-#     global new_ingest, new_ingest_time
-#     new_ingest = True
-#     new_ingest_time = datetime.now()
-#     return {"message": "Ingestion started."}
-
-
 @app.get("/chainlink")
 async def get_chainlink(request: Request):
     return templates.TemplateResponse("chainlink.html", {"request": request})
