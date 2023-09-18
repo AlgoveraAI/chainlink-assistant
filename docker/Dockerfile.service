@@ -1,5 +1,10 @@
 FROM python:3.10-slim
 
+# install libs to download and unzip files
+RUN apt-get update && apt-get install -y \
+    wget \
+    unzip
+
 WORKDIR /chainlink-assistant
 
 COPY ../templates /chainlink-assistant/templates
