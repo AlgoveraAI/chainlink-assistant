@@ -92,7 +92,7 @@ async def chat_endpoint_chainlink(
         verified = False
         while True:
             # Select a random OpenAI API key
-            if not len(API_KEYS) > 1:
+            if not len(API_KEYS) > 0:
                 raise Exception("Not enough API keys. Set OPENAI_API_KEYS")
 
             api_key = random.choice(API_KEYS)
