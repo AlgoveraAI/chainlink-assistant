@@ -22,10 +22,10 @@ class MessageType(str, Enum):
 class ChatInput(BaseModel):
     username: str
     message: str
-    memory: Optional[bool] = False
-    memory_uuid: Optional[str] = None
-    context_uuids: Optional[List[str]] = None
-    assistant_uuid: Optional[str] = None
+    # memory: Optional[bool] = False
+    # # memory_uuid: Optional[str] = None
+    # context_uuids: Optional[List[str]] = None
+    # assistant_uuid: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -44,7 +44,7 @@ class SearchType(str, Enum):
 class SearchRequestSchema(BaseModel):
     query: str
     type_: SearchType = SearchType.all
-    
+
 
 class SearchResponseSchema(BaseModel):
     results: List[Dict[str, str]]

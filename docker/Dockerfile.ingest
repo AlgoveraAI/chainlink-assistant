@@ -1,4 +1,3 @@
-# Use the official Python 3.10 image as a base image
 FROM python:3.10-slim
 
 # Install essential libraries for Selenium, Chrome, the GPG key, and libxcb
@@ -23,10 +22,14 @@ RUN apt-get update && apt-get install -y \
     libpango-1.0-0 \
     libcairo2 \
     libsoundio2 \
+    git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y xvfb
+
+# macos specific
+RUN apt-get install gcc python3-dev -y
 
 ENV DISPLAY=:99
 
@@ -47,15 +50,21 @@ RUN wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/116.0.5845
     && rm -r chromedriver-linux64 \
     && rm chromedriver-linux64.zip
 
-# Install Python dependencies
-COPY requirements.txt /tmp/
-RUN pip install -r /tmp/requirements.txt
 
-# Create a directory for our application and set it as working directory
-WORKDIR /app
+WORKDIR /chainlink-assistant
 
-# Copy over the rest of our application
-COPY . /app/
+COPY ../ingest /chainlink-assistant/ingest
+COPY ../chat /chainlink-assistant/chat
+COPY ../search /chainlink-assistant/search
+COPY ../*.py /chainlink-assistant/
+COPY ../requirements.txt /chainlink-assistant/requirements.txt
+#COPY ./.env /chainlink-assistant/
+# FOR DEV MODE
+#PASS env file when running the image: docker run --env-file ./.env  chainlink-ingest
 
-# Run Jupyter Lab by default when the container starts
-CMD ["jupyter", "lab", "--ip=0.0.0.0", "--allow-root", "--NotebookApp.token=''", "--NotebookApp.password=''"]
+RUN pip install -r /chainlink-assistant/requirements.txt 
+#--no-cache-dir 
+
+EXPOSE 8000
+
+CMD ["python", "ingest_script.py"]

@@ -15,6 +15,7 @@ USERNAMES = [
     "1af26bc619c4adf5e3f9a1806879e434ab681281c30528d2a30691226b4f7051",
 ]
 
+
 def createLogHandler(job_name, log_file="logs.log"):
     logger = logging.getLogger(job_name)
     logger.setLevel(logging.INFO)

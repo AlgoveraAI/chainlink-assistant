@@ -18,6 +18,7 @@ from config import ROOT_DIR
 
 logger = createLogHandler(__name__, "logs.log")
 
+
 class CustomeSplitter:
     def __init__(self, chunk_threshold=6000, chunk_size=6000, chunk_overlap=50):
         self.chunk_threshold = chunk_threshold
@@ -91,44 +92,50 @@ class CustomRetriever(BaseRetriever, BaseModel):
 
         return cls(
             full_docs=full_docs,
-            base_retriever_all=vectorstore_all.as_retriever(search_kwargs={"k": k_initial}),
-            base_retriever_data=vectorstore_data.as_retriever(search_kwargs={"k": k_initial}),
+            base_retriever_all=vectorstore_all.as_retriever(
+                search_kwargs={"k": k_initial}
+            ),
+            base_retriever_data=vectorstore_data.as_retriever(
+                search_kwargs={"k": k_initial}
+            ),
             logger=logger,
         )
 
-    def get_relevant_documents(self, query: str, workflow:int=1) -> List[Document]:
+    def get_relevant_documents(self, query: str, workflow: int = 1) -> List[Document]:
         self.logger.info(f"Worflow: {workflow}")
 
         if workflow == 2:
             results = self.base_retriever_data.get_relevant_documents(query=query)
             self.logger.info(f"Retrieved {len(results)} documents")
-            return results[:self.k_final]
+            return results[: self.k_final]
 
         else:
-            results =  self.base_retriever_all.get_relevant_documents(query=query)
+            results = self.base_retriever_all.get_relevant_documents(query=query)
             self.logger.info(f"Retrieved {len(results)} documents")
             if workflow == 1:
                 doc_ids = [doc.metadata["source"] for doc in results]
 
                 # make it a set but keep the order
-                doc_ids = list(dict.fromkeys(doc_ids))[:self.k_final]
+                doc_ids = list(dict.fromkeys(doc_ids))[: self.k_final]
 
                 # log to the logger
                 self.logger.info(f"Retrieved {len(doc_ids)} unique documents")
 
                 # get upto 4 documents
-                full_retrieved_docs = [d for d in self.full_docs if d.metadata["source"] in doc_ids]
+                full_retrieved_docs = [
+                    d for d in self.full_docs if d.metadata["source"] in doc_ids
+                ]
 
                 return self.prepare_source(full_retrieved_docs)
 
-            full_retrieved_docs = results[:self.k_final]
+            full_retrieved_docs = results[: self.k_final]
             return self.prepare_source(full_retrieved_docs)
-        
+
     async def aget_relevant_documents(self, query: str) -> List[Document]:
         raise NotImplementedError
 
     def prepare_source(self, documents: List[Document]) -> List[Document]:
-        
+
         for doc in documents:
             source = doc.metadata["source"]
             if "chunk" in source:
@@ -171,7 +178,7 @@ def get_retriever_chain():
         vectorstore_all = pickle.load(f)
 
     # Put back index
-    vectorstore_all.index = index_all 
+    vectorstore_all.index = index_all
 
     # Open faiss index data
     index_data = faiss.read_index(f"{folder}/docs_data.index")
@@ -238,7 +245,7 @@ def get_streaming_chain(manager, chain, workflow):
 
 
 def get_search_retriever():
-    folder = f'{ROOT_DIR}/data'
+    folder = f"{ROOT_DIR}/data"
     # Open blogs document
     with open(f"{folder}/blog_documents.pkl", "rb") as f:
         blog_documents = pickle.load(f)
@@ -259,15 +266,14 @@ def get_search_retriever():
     with open(f"{folder}/chain_link_you_tube_documents.pkl", "rb") as f:
         chain_link_youtube_documents = pickle.load(f)
 
-
     chainlink_search_retrevier = SearchRetriever.from_documents(
         blog_docs=blog_documents,
         tech_docs=technical_documents,
         data_docs=data_documents,
         chain_link_docs=chain_link_documents,
         chain_link_youtube_docs=chain_link_youtube_documents,
-        k_final=20, 
-        logger=logger
+        k_final=20,
+        logger=logger,
     )
 
     return chainlink_search_retrevier

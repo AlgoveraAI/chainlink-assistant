@@ -1,33 +1,67 @@
 import json
-import logging
-from datetime import datetime
 from dotenv import load_dotenv
 from fastapi.templating import Jinja2Templates
-from fastapi import FastAPI, WebSocket, Request, Depends, WebSocketDisconnect, BackgroundTasks, status, HTTPException
-from ingest_script import ingest_task
-from schemas import ChatInput, ChatResponse, Sender, MessageType, SearchRequestSchema, SearchResponseSchema
-from utils import (
-    get_websocket_manager,
-    ConnectionManager,
-    USERNAMES
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    Request,
+    Depends,
+    WebSocketDisconnect,
+    # BackgroundTasks,
+    status,
+    HTTPException,
 )
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+# from ingest_script import ingest_task
+from schemas import (
+    ChatInput,
+    ChatResponse,
+    Sender,
+    MessageType,
+    SearchRequestSchema,
+    SearchResponseSchema,
+)
+from utils import get_websocket_manager, ConnectionManager, USERNAMES
 from chat.get_chain_no_mem import get_answer
-from chat.utils import get_search_retriever
-from config import get_logger
+from chat.utils import get_search_retriever, get_retriever_chain
+from config import get_logger, WS_HOST, HTTP_HOST
+import os
+
+### Secure disabled for FastAPI issues with protected ws ###
+# Secure endpoints using a bearer token
+#bearer_scheme = HTTPBearer()
+#BEARER_TOKEN = os.environ.get("BEARER_TOKEN")
+#assert BEARER_TOKEN is not None
+
+#def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+#    if credentials.scheme != "Bearer" or credentials.credentials != BEARER_TOKEN:
+#        raise HTTPException(status_code=401, detail="Invalid or missing token")
+#    return credentials
+
 
 # Global variables
 logger = get_logger(__name__)
 
-new_ingest = False
-new_ingest_time = None
 templates = Jinja2Templates(directory="templates")
-try:
-    chainlink_search_retrevier = get_search_retriever()
-except:
-    chainlink_search_retrevier = None
-    logger.info("Search retriever not loaded")
+
+def initial_setup():
+    try:
+        chainlink_search_retrevier = get_search_retriever()
+    except Exception as err:
+        chainlink_search_retrevier = None
+        logger.info("Search retriever not loaded: " + str(err))
+
+    try:
+        retriever, chain = get_retriever_chain()
+    except Exception as err:
+        retriever = None
+        chain = None
+        logger.info("Retriever chain not loaded: " + str(err))
+
+    return chainlink_search_retrevier, retriever, chain
 
 load_dotenv()
+chainlink_search_retrevier, retriever, chain = initial_setup()
 
 app = FastAPI()
 
@@ -36,18 +70,9 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.post("/ingest")
-def ingest(background_tasks: BackgroundTasks):
-    background_tasks.add_task(ingest_task)
-    global new_ingest, new_ingest_time
-    new_ingest = True
-    new_ingest_time = datetime.now()
-    return {"message": "Ingestion started."}
-
 @app.get("/chainlink")
 async def get_chainlink(request: Request):
-    return templates.TemplateResponse("chainlink.html", {"request": request})
-
+    return templates.TemplateResponse("chainlink.html", {"request": request, "ws_host": WS_HOST, "http_host": HTTP_HOST})
 
 @app.websocket("/chat_chainlink")
 async def chat_endpoint_chainlink(
@@ -70,9 +95,7 @@ async def chat_endpoint_chainlink(
                 verified = True
 
             resp = ChatResponse(
-                sender=Sender.YOU, 
-                message=message.message, 
-                type=MessageType.STREAM
+                sender=Sender.YOU, message=message.message, type=MessageType.STREAM
             )
             await manager.broadcast(resp)
 
@@ -83,7 +106,7 @@ async def chat_endpoint_chainlink(
             await manager.broadcast(start_resp)
 
             logger.info("Getting answer without memory")
-            answer = await get_answer(message.message, manager=manager)
+            answer = await get_answer(message.message, manager=manager, retriever=retriever, base_chain=chain)
             logger.info(answer)
 
             end_resp = ChatResponse(
@@ -122,23 +145,27 @@ def search(
     if chainlink_search_retrevier is None:
         raise HTTPException(status_code=500, detail="Search retriever not loaded")
 
-    # Check if new ingest and if its been 3 hours reload the search retriever
-    if new_ingest:
-        time_diff = datetime.now() - new_ingest_time
-        if time_diff.seconds > 10800:
-            logger.info("Reloading search retriever")
-            chainlink_search_retrevier = get_search_retriever()
-            new_ingest = False
-            new_ingest_time = None
-
     logger.info("General Search")
     job_dict = job.dict()
     logger.info(job_dict)
 
     # Get search results
-    results = chainlink_search_retrevier.get_relevant_documents(query=job_dict["query"], type_=job_dict["type_"])
+    results = chainlink_search_retrevier.get_relevant_documents(
+        query=job_dict["query"], type_=job_dict["type_"]
+    )
     logger.info(f"Retrieved {len(results)} documents")
     logger.info(results)
 
     # Return results
     return SearchResponseSchema(results=results)
+
+
+@app.post('/refresh')
+def refresh():
+    global chainlink_search_retrevier, retriever, chain
+    try:
+        chainlink_search_retrevier, retriever, chain = initial_setup()
+        return {"message": "Refreshed."}
+    except Exception as err:
+        logger.info("Refresh failed: " + str(err))
+        return {"message": "Refresh failed: " + str(err)}

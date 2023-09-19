@@ -23,23 +23,25 @@ from langchain.chains import LLMChain
 from langchain.docstore.document import Document
 from langchain.document_loaders import YoutubeLoader
 
-
-from config import DATA_DIR, get_logger
-from ingest.utils import get_description_chain, remove_prefix_text, extract_first_n_paragraphs, get_driver
+from config import DATA_DIR, get_logger, MAX_THREADS
+from ingest.utils import (
+    get_description_chain,
+    remove_prefix_text,
+    extract_first_n_paragraphs,
+    get_driver,
+)
 
 logger = get_logger(__name__)
 
 # Settings for requests
-MAX_THREADS = 10
 REQUEST_DELAY = 0.1
-MAX_WORKERS = 10
 TIMEOUT = 10
 SESSION = requests.Session()
 
-driver = get_driver()
+driver = None
 
 
-def filter_urls_by_base_url(urls:List, base_url:str):
+def filter_urls_by_base_url(urls: List, base_url: str):
     """
     Filters a list of URLs and returns only those that include the base_url.
 
@@ -49,16 +51,18 @@ def filter_urls_by_base_url(urls:List, base_url:str):
     """
     return [url for url in urls if base_url in url]
 
-def normalize_url(url:str):
+
+def normalize_url(url: str):
     """
     Normalize a URL by ensuring it ends with '/'.
 
     :param url: URL to normalize.
     :return: Normalized URL.
     """
-    return url if url.endswith('/') else url + '/'
+    return url if url.endswith("/") else url + "/"
 
-def fetch_url_request(url:str):
+
+def fetch_url_request(url: str):
     """
     Fetches the content of a URL using requests library and returns the response.
     In case of any exception during fetching, logs the error and returns None.
@@ -74,20 +78,24 @@ def fetch_url_request(url:str):
         logger.error(f"Error fetching {url}: {e}")
         return None
 
+
 # Use Selenium's WebDriverWait instead of time.sleep
-def fetch_url_selenium(url:str):
+def fetch_url_selenium(url: str):
     try:
         driver.get(url)
-        WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+        WebDriverWait(driver, TIMEOUT).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
         return driver.page_source
-    
+
     except RequestException as e:
         logger.error(f"Error fetching {url}: {e}")
         return None
 
-def process_url(response:requests.Response, visited:Set, base_url:str):
+
+def process_url(response: requests.Response, visited: Set, base_url: str):
     """
-    Process a URL response. Extract all absolute URLs from the response that 
+    Process a URL response. Extract all absolute URLs from the response that
     haven't been visited yet and belong to the same base_url.
 
     :param response: Response object from a URL fetch.
@@ -97,17 +105,18 @@ def process_url(response:requests.Response, visited:Set, base_url:str):
     """
     urls = set()
     if response:
-        soup = BeautifulSoup(response.content, 'html.parser')
-        for link in soup.find_all('a'):
-            href = link.get('href')
-            if href is not None and '#' not in href:
+        soup = BeautifulSoup(response.content, "html.parser")
+        for link in soup.find_all("a"):
+            href = link.get("href")
+            if href is not None and "#" not in href:
                 absolute_url = normalize_url(urljoin(response.url, href))
                 if absolute_url not in visited and base_url in absolute_url:
                     visited.add(absolute_url)
                     urls.add(absolute_url)
     return urls
 
-def get_all_suburls(url:str, visited:Optional[Set]=None):
+
+def get_all_suburls(url: str, visited: Optional[Set] = None):
     """
     Get all sub-URLs of a given URL that belong to the same domain.
 
@@ -134,28 +143,32 @@ def get_all_suburls(url:str, visited:Optional[Set]=None):
                 urls.update(new_urls)
                 if len(future_responses) < MAX_THREADS:
                     for new_url in new_urls:
-                        future_responses.append(executor.submit(fetch_url_request, new_url))
+                        future_responses.append(
+                            executor.submit(fetch_url_request, new_url)
+                        )
 
     urls = filter_urls_by_base_url(urls, base_url)
     return urls
 
-def is_there_video(soup:BeautifulSoup) -> List[str]:
+
+def is_there_video(soup: BeautifulSoup) -> List[str]:
     """Check if there is a video in the soup
     params:
         soup: BeautifulSoup object
     returns:
         video_links: List of video links
     """
-    iframes = soup.find_all('iframe')
+    iframes = soup.find_all("iframe")
     video_links = []
     for iframe in iframes:
-        src = iframe.get('src')
-        if 'youtube' in src:
+        src = iframe.get("src")
+        if "youtube" in src:
             video_links.append(src)
 
     return video_links
 
-def get_youtube_docs(video_tags:List[str], chain_description) -> List[Document]:
+
+def get_youtube_docs(video_tags: List[str], chain_description) -> List[Document]:
     """Get youtube docs from the video tags
     params:
         video_tags: List of video tags
@@ -169,17 +182,20 @@ def get_youtube_docs(video_tags:List[str], chain_description) -> List[Document]:
                 u_tube = json.loads(v_tag.script.string)["items"][0]["url"]
                 u_tube_id = YoutubeLoader.extract_video_id(u_tube)
                 u_tube_doc = YoutubeLoader(u_tube_id, add_video_info=True).load()[0]
-                
+
                 # Get description
-                description = chain_description.predict(context=u_tube_doc.page_content[:1500])
+                description = chain_description.predict(
+                    context=u_tube_doc.page_content[:1500]
+                )
 
                 # Make sure its Chainlink video
                 assert u_tube_doc.metadata["author"].lower() == "chainlink"
                 u_tube_doc.metadata = {
-                    "source":u_tube, 
-                    "source_type":"video", 
-                    "title":u_tube_doc.metadata["title"],
-                    "description":description}
+                    "source": u_tube,
+                    "source_type": "video",
+                    "title": u_tube_doc.metadata["title"],
+                    "description": description,
+                }
 
                 # Append to the list
                 u_tube_docs.append(u_tube_doc)
@@ -191,7 +207,10 @@ def get_youtube_docs(video_tags:List[str], chain_description) -> List[Document]:
         u_tube_docs = []
     return u_tube_docs
 
-def scrap_url(url: str,  chain_description:LLMChain, driver: webdriver.Chrome=driver) -> Document:
+
+def scrap_url(
+    url: str, chain_description: LLMChain, driver: webdriver.Chrome = driver
+) -> Document:
     """Process a URL and return a list of words
     param url: URL to process
     param driver: Selenium driver
@@ -202,25 +221,26 @@ def scrap_url(url: str,  chain_description:LLMChain, driver: webdriver.Chrome=dr
     time.sleep(2)
 
     # Get the page source
-    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    soup = BeautifulSoup(driver.page_source, "html.parser")
 
     # Get the Markdown content
     # Remove images, videos, SVGs, and other media elements; also nav
-    for media_tag in soup.find_all(['img', 'video', 'svg', 'audio', 'source', 'track', 'picture', 'nav']):
+    for media_tag in soup.find_all(
+        ["img", "video", "svg", "audio", "source", "track", "picture", "nav"]
+    ):
         media_tag.decompose()
 
     # Remove the footer (assuming it's in a <footer> tag or has a class/id like 'footer')
-    for footer_tag in soup.find_all(['footer', {'class': 'footer'}, {'id': 'footer'}]):
+    for footer_tag in soup.find_all(["footer", {"class": "footer"}, {"id": "footer"}]):
         footer_tag.decompose()
 
     # Remove sections with class="section-page-alert"
-    for page_alert in soup.find_all('div', class_='section-page-alert'):
+    for page_alert in soup.find_all("div", class_="section-page-alert"):
         page_alert.decompose()
 
     # Remove sections with class="cta-subscribe"
-    for cta_subscribe in soup.find_all(class_='cta-subscribe'):
+    for cta_subscribe in soup.find_all(class_="cta-subscribe"):
         cta_subscribe.decompose()
-        
 
     html_content = str(soup)
     h = html2text.HTML2Text()
@@ -230,37 +250,45 @@ def scrap_url(url: str,  chain_description:LLMChain, driver: webdriver.Chrome=dr
     markdown_content = remove_prefix_text(markdown_content)
 
     # Get the title
-    titles = re.findall(r'^#\s(.+)$', markdown_content, re.MULTILINE)
-    title = titles[0].strip() 
+    titles = re.findall(r"^#\s(.+)$", markdown_content, re.MULTILINE)
+    title = titles[0].strip()
 
     # Get description
     para = extract_first_n_paragraphs(markdown_content, num_para=2)
     description = chain_description.predict(context=para)
-    
+
     # Put the markdown content into a Document object
-    doc = Document(page_content=markdown_content, metadata={
-        "source": url, 
-        "title": title, 
-        "description": description, 
-        "source_type": "main"})
+    doc = Document(
+        page_content=markdown_content,
+        metadata={
+            "source": url,
+            "title": title,
+            "description": description,
+            "source_type": "main",
+        },
+    )
 
     # Get YouTube docs
-    video_tags = soup.find_all('a', href=True, class_="techtalk-video-lightbox")
-    u_tube_docs = get_youtube_docs(video_tags, chain_description)    
+    video_tags = soup.find_all("a", href=True, class_="techtalk-video-lightbox")
+    u_tube_docs = get_youtube_docs(video_tags, chain_description)
 
     return doc, u_tube_docs
+
 
 def concurrent_fetch_url_selenium(url: str):
     driver = get_driver()
     try:
         driver.get(url)
-        WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+        WebDriverWait(driver, TIMEOUT).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
         source = driver.page_source
     except Exception as e:
         logger.error(f"Error fetching {url}: {e}")
         source = None
     driver.quit()
     return source
+
 
 def concurrent_scrap_url(url: str, chain_description: LLMChain):
     try:
@@ -269,24 +297,27 @@ def concurrent_scrap_url(url: str, chain_description: LLMChain):
         if page_source is None:
             return None, []
 
-        soup = BeautifulSoup(page_source, 'html.parser')
+        soup = BeautifulSoup(page_source, "html.parser")
         # Get the Markdown content
         # Remove images, videos, SVGs, and other media elements; also nav
-        for media_tag in soup.find_all(['img', 'video', 'svg', 'audio', 'source', 'track', 'picture', 'nav']):
+        for media_tag in soup.find_all(
+            ["img", "video", "svg", "audio", "source", "track", "picture", "nav"]
+        ):
             media_tag.decompose()
 
         # Remove the footer (assuming it's in a <footer> tag or has a class/id like 'footer')
-        for footer_tag in soup.find_all(['footer', {'class': 'footer'}, {'id': 'footer'}]):
+        for footer_tag in soup.find_all(
+            ["footer", {"class": "footer"}, {"id": "footer"}]
+        ):
             footer_tag.decompose()
 
         # Remove sections with class="section-page-alert"
-        for page_alert in soup.find_all('div', class_='section-page-alert'):
+        for page_alert in soup.find_all("div", class_="section-page-alert"):
             page_alert.decompose()
 
         # Remove sections with class="cta-subscribe"
-        for cta_subscribe in soup.find_all(class_='cta-subscribe'):
+        for cta_subscribe in soup.find_all(class_="cta-subscribe"):
             cta_subscribe.decompose()
-            
 
         html_content = str(soup)
         h = html2text.HTML2Text()
@@ -296,37 +327,46 @@ def concurrent_scrap_url(url: str, chain_description: LLMChain):
         markdown_content = remove_prefix_text(markdown_content)
 
         # Get the title
-        titles = re.findall(r'^#\s(.+)$', markdown_content, re.MULTILINE)
-        title = titles[0].strip() 
+        titles = re.findall(r"^#\s(.+)$", markdown_content, re.MULTILINE)
+        title = titles[0].strip()
 
         # Get description
         para = extract_first_n_paragraphs(markdown_content, num_para=2)
         description = chain_description.predict(context=para)
-        
+
         # Put the markdown content into a Document object
-        doc = Document(page_content=markdown_content, metadata={
-            "source": url, 
-            "title": title, 
-            "description": description, 
-            "source_type": "main"})
+        doc = Document(
+            page_content=markdown_content,
+            metadata={
+                "source": url,
+                "title": title,
+                "description": description,
+                "source_type": "main",
+            },
+        )
 
         # Get YouTube docs
-        video_tags = soup.find_all('a', href=True, class_="techtalk-video-lightbox")
-        u_tube_docs = get_youtube_docs(video_tags, chain_description)    
+        video_tags = soup.find_all("a", href=True, class_="techtalk-video-lightbox")
+        u_tube_docs = get_youtube_docs(video_tags, chain_description)
 
         return doc, u_tube_docs
     except Exception as e:
         logger.error(f"Error processing {url}: {e}")
         return None, []
 
+
 def scrap_chain_link() -> Tuple[List[Dict], List[Dict]]:
     """
     Scrap all the urls from https://chain.link/ and save the main docs and you tube docs to disk
     return: Tuple[List[Dict], List[Dict]]
     """
+    global driver
+    driver = get_driver()
 
     raw_urls = get_all_suburls("https://chain.link/")
-    raw_urls = list(set([url for url in raw_urls if url.startswith("https://chain.link")]))
+    raw_urls = list(
+        set([url for url in raw_urls if url.startswith("https://chain.link")])
+    )
     if "https://chain.link/faqs" not in raw_urls:
         raw_urls.append("https://chain.link/faqs")
 
@@ -334,8 +374,13 @@ def scrap_chain_link() -> Tuple[List[Dict], List[Dict]]:
     all_you_tube_docs = []
     chain_description = get_description_chain()
 
+    progress_bar = tqdm(total=len(raw_urls), desc="Processing URLs", position=0, leave=True)
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
-        future_to_url = {executor.submit(concurrent_scrap_url, url, chain_description): url for url in raw_urls}
+        future_to_url = {
+            executor.submit(concurrent_scrap_url, url, chain_description): url
+            for url in raw_urls
+        }
         for future in concurrent.futures.as_completed(future_to_url):
             url = future_to_url[future]
             try:
@@ -344,9 +389,11 @@ def scrap_chain_link() -> Tuple[List[Dict], List[Dict]]:
                     all_main_docs.append(main_doc)
                 if you_tube_docs:
                     all_you_tube_docs.extend(you_tube_docs)
-                logger.info(f"Processed {url}")
             except Exception as e:
                 logger.error(f"Error processing {url}: {e}")
+            
+            # Update the tqdm progress bar
+            progress_bar.update(1)
 
     # Save to disk as pickle
     with open(f"{DATA_DIR}/chain_link_main_documents.pkl", "wb") as f:
@@ -358,4 +405,3 @@ def scrap_chain_link() -> Tuple[List[Dict], List[Dict]]:
     logger.info("Done")
 
     return all_main_docs, all_you_tube_docs
-    

@@ -51,9 +51,7 @@
         }
     </style>
     <script>
-        // var endpoint = "wss://streamingprod.algoverai.link/chat_chainlink";
-        // var endpoint = "ws://a69484b80e8f84c5b8e408195d4eeec9-1952406453.us-east-1.elb.amazonaws.com/chat";
-        var endpoint = "ws://localhost:8000/chat_chainlink";
+        var endpoint = "{{ ws_host }}/chat_chainlink";
         var ws = new WebSocket(endpoint);
         // Receive message from server word by word. Display the words as they are received.
         ws.onmessage = function (event) {
@@ -169,6 +167,47 @@
             // document.getElementById('memory').disabled = false;
             // document.getElementById('memoryUUID').disabled = false;
         }
+
+         // Send search request to server
+         function sendTopic(event) {
+            event.preventDefault();
+            
+            var topic = document.getElementById('searchText').value;
+            if (topic === "") {
+                return;
+            }
+
+            console.log("topic: " + topic)
+
+            // Turn the button into a loading button
+            var button = document.getElementById('sendTopic');
+            button.innerHTML = "Loading...";
+            button.disabled = true;
+
+            console.log("calling search..");
+            
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", "{{ http_host }}/search");
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Content-Type", "application/json");
+
+            xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+
+                var response = JSON.parse(xhr.responseText);
+
+                var header = document.getElementById('header_search');
+                header.innerHTML = JSON.stringify(response);
+                var button = document.getElementById('sendTopic');
+                button.innerHTML = "Send";
+                button.disabled = false;
+
+            }};
+
+            let data = JSON.stringify({ "query": topic, "type_" : "all" });
+            xhr.send(data);
+            
+        }
     </script>
 </head>
 <body class="bg-black">
@@ -190,6 +229,19 @@
                 <button id="send" type="submit" class="btn btn-primary">Send</button>
                 <button id="reset" type="button" class="btn btn-secondary" onclick="resetChat()">Reset</button>
             </form>
+        </div>
+    </div>
+
+    <div class="chat-body card">
+        <div class="card-body p-5">
+            <h4 class="card-title text-center text-xl font-medium"> Chainlink Search </h4>
+            <p class="card-text text-center text-sm" id="header_search"> Introduce a topic </p>    
+            <hr class="border-gray-500 mb-5" style="margin-top: 20px;">
+            <div id="topic" class="overflow-auto" style="max-height: 500px;"></div>
+            <div class="form-inline mt-5" id="search-form">
+                <input type="text" class="form-control" placeholder="Write your question" id="searchText">
+                <button id="sendTopic" type="submit" class="btn btn-primary" onclick="sendTopic(event)">Send</button>
+            </div>
         </div>
     </div>
 </body>

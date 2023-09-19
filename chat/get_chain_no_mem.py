@@ -3,7 +3,7 @@ import tiktoken
 from chat.prompts_no_mem import (
     FINAL_ANSWER_PROMPT,
     FINAL_ANSWER_2_PROMPT,
-    ROUTER_PROMPT
+    ROUTER_PROMPT,
 )
 from chat.utils import get_retriever_chain, get_streaming_chain
 
@@ -69,7 +69,7 @@ def call_llm_final_2_answer(question, document, chain):
 
 def process_documents(question, chain, retriever, max_tokens=14_000):
     """Process a list of documents with LLM calls."""
-    
+
     # Use router to decide which workflow to use
     chain.prompt = ROUTER_PROMPT
     try:
@@ -79,7 +79,7 @@ def process_documents(question, chain, retriever, max_tokens=14_000):
         workflow = 0
 
     logger.info(f"Using workflow {workflow}")
-    
+
     documents = retriever.get_relevant_documents(question, workflow=workflow)
     batches = []
     num_llm_calls = 0
@@ -96,11 +96,8 @@ def process_documents(question, chain, retriever, max_tokens=14_000):
     return batches, num_llm_calls, workflow
 
 
-async def get_answer(question, manager, max_tokens=14_000):
+async def get_answer(question, manager, retriever, base_chain,max_tokens=14_000):
     """Get an answer to a question."""
-
-    # Get the retriever chain
-    retriever, base_chain = get_retriever_chain()
 
     # Send a status message
     resp = ChatResponse(
@@ -110,17 +107,12 @@ async def get_answer(question, manager, max_tokens=14_000):
 
     # Main code that calls process_documents
     batches, num_llm_calls, workflow = process_documents(
-        question=question, 
-        max_tokens=max_tokens,
-        chain=base_chain,
-        retriever=retriever
+        question=question, max_tokens=max_tokens, chain=base_chain, retriever=retriever
     )
 
     # Get the streaming chain
     chain_stream = get_streaming_chain(
-        manager=manager, 
-        chain=base_chain,
-        workflow=workflow
+        manager=manager, chain=base_chain, workflow=workflow
     )
 
     # Send a status message
@@ -131,10 +123,7 @@ async def get_answer(question, manager, max_tokens=14_000):
 
     if num_llm_calls == 1:
         result = await call_llm_final_answer(
-            question=question, 
-            document=batches[0], 
-            chain=chain_stream, 
-            stream=True
+            question=question, document=batches[0], chain=chain_stream, stream=True
         )
         return result
 
@@ -143,9 +132,7 @@ async def get_answer(question, manager, max_tokens=14_000):
         results = []
         for batch in batches:
             result = call_llm_final_answer(
-                question=question, 
-                document=batch, 
-                chain=base_chain
+                question=question, document=batch, chain=base_chain
             )
             results.append(result)
 
@@ -153,9 +140,7 @@ async def get_answer(question, manager, max_tokens=14_000):
 
         logger.info(f"Final LLM call with {len(results)} results.")
         combined_result = await call_llm_final_2_answer(
-            question=question, 
-            document=combined_result, 
-            chain=chain_stream
+            question=question, document=combined_result, chain=chain_stream
         )
 
         return combined_result
