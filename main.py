@@ -2,7 +2,9 @@ import os
 import json
 import random
 from dotenv import load_dotenv
+load_dotenv()
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import (
     FastAPI,
     WebSocket,
@@ -75,6 +77,17 @@ if chain is None:
 
 app = FastAPI()
 
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -89,7 +102,7 @@ async def chat_endpoint_chainlink(
     websocket: WebSocket, manager: ConnectionManager = Depends(get_websocket_manager)
 ):
     try:
-        verified = False
+        # verified = False
         while True:
             # Select a random OpenAI API key
             if not len(API_KEYS) > 0:
@@ -101,15 +114,15 @@ async def chat_endpoint_chainlink(
             data = await websocket.receive_text()
             message = ChatInput(**json.loads(data))
             logger.info(message)
-            if not verified:
-                # Validate user credentials
-                logger.info("Validating credentials")
-                if message.username not in USERNAMES:
-                    logger.info("Invalid username")
-                    await websocket.send_json({"error": "Invalid username"})
-                    await websocket.close()
-                    return
-                verified = True
+            # if not verified:
+            #     # Validate user credentials
+            #     logger.info("Validating credentials")
+            #     if message.username not in USERNAMES:
+            #         logger.info("Invalid username")
+            #         await websocket.send_json({"error": "Invalid username"})
+            #         await websocket.close()
+            #         return
+            #     verified = True
 
             resp = ChatResponse(
                 sender=Sender.YOU, message=message.message, type=MessageType.STREAM
