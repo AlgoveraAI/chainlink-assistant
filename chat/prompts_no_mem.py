@@ -15,12 +15,13 @@ Each point in your answer should be formatted with corresponding reference(s) us
 
 The footnote should be formatted as follows: 
 ```
-References:
+## References:
 [^1^]: <reference 1> 
 [^2^]: <reference 2> 
 [^3^]: <reference 3>
 ```
 Please avoid duplicating references. For example, if the same reference is used twice in the answer, please only include it once in the footnote.
+The `References` word should be a heading 2.
 """
 
 final_answer_human_template = """
@@ -45,12 +46,13 @@ Each point in your answer should be formatted with corresponding reference(s) us
 
 The footnote should be formatted as follows: 
 ```
-References:
+## References:
 [^1^]: <reference 1> 
 [^2^]: <reference 2> 
 [^3^]: <reference 3>
 ```
 Please avoid duplicating references. For example, if the same reference is used twice in the answer, please only include it once in the footnote.
+The `References` word should be a heading 2.
 """
 
 final_answer_2_human_template = """
