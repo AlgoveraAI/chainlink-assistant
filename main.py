@@ -1,18 +1,20 @@
+import os
 import json
+import random
 from dotenv import load_dotenv
+load_dotenv()
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import (
     FastAPI,
     WebSocket,
     Request,
     Depends,
     WebSocketDisconnect,
-    # BackgroundTasks,
     status,
     HTTPException,
 )
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-# from ingest_script import ingest_task
 from schemas import (
     ChatInput,
     ChatResponse,
@@ -25,7 +27,6 @@ from utils import get_websocket_manager, ConnectionManager, USERNAMES
 from chat.get_chain_no_mem import get_answer
 from chat.utils import get_search_retriever, get_retriever_chain
 from config import get_logger, WS_HOST, HTTP_HOST
-import os
 
 ### Secure disabled for FastAPI issues with protected ws ###
 # Secure endpoints using a bearer token
@@ -38,11 +39,15 @@ import os
 #        raise HTTPException(status_code=401, detail="Invalid or missing token")
 #    return credentials
 
-
 # Global variables
 logger = get_logger(__name__)
 
+API_KEYS = os.environ.get("OPENAI_API_KEYS").split(",")
+os.environ["OPENAI_API_KEY"] = random.choice(API_KEYS)
+
+
 templates = Jinja2Templates(directory="templates")
+
 
 def initial_setup():
     try:
@@ -60,10 +65,27 @@ def initial_setup():
 
     return chainlink_search_retrevier, retriever, chain
 
-load_dotenv()
 chainlink_search_retrevier, retriever, chain = initial_setup()
+# Make sure the retriever is loaded
+if chainlink_search_retrevier is None:
+    raise Exception("Search retriever not loaded")
+if retriever is None:
+    raise Exception("Retriever not loaded")
+if chain is None:
+    raise Exception("Chain not loaded")
+
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["x-api-key"]
+)
+
 
 @app.get("/")
 def read_root():
@@ -79,20 +101,27 @@ async def chat_endpoint_chainlink(
     websocket: WebSocket, manager: ConnectionManager = Depends(get_websocket_manager)
 ):
     try:
-        verified = False
+        # verified = False
         while True:
+            # Select a random OpenAI API key
+            if not len(API_KEYS) > 0:
+                raise Exception("Not enough API keys. Set OPENAI_API_KEYS")
+
+            api_key = random.choice(API_KEYS)
+            os.environ["OPENAI_API_KEY"] = api_key
+
             data = await websocket.receive_text()
             message = ChatInput(**json.loads(data))
             logger.info(message)
-            if not verified:
-                # Validate user credentials
-                logger.info("Validating credentials")
-                if message.username not in USERNAMES:
-                    logger.info("Invalid username")
-                    await websocket.send_json({"error": "Invalid username"})
-                    await websocket.close()
-                    return
-                verified = True
+            # if not verified:
+            #     # Validate user credentials
+            #     logger.info("Validating credentials")
+            #     if message.username not in USERNAMES:
+            #         logger.info("Invalid username")
+            #         await websocket.send_json({"error": "Invalid username"})
+            #         await websocket.close()
+            #         return
+            #     verified = True
 
             resp = ChatResponse(
                 sender=Sender.YOU, message=message.message, type=MessageType.STREAM
@@ -106,8 +135,13 @@ async def chat_endpoint_chainlink(
             await manager.broadcast(start_resp)
 
             logger.info("Getting answer without memory")
-            answer = await get_answer(message.message, manager=manager, retriever=retriever, base_chain=chain)
-            logger.info(answer)
+            try:
+                answer = await get_answer(message.message, manager=manager, retriever=retriever, base_chain=chain)
+                logger.info(answer)
+            except Exception as err:
+                logger.info("Error getting answer: " + str(err))
+                message = "OpenAI Error. There was an error getting an answer. Please try again."
+                await websocket.send_json({"error": message})
 
             end_resp = ChatResponse(
                 sender=Sender.BOT,
