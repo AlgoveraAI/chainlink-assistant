@@ -25,7 +25,7 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 REDIRECT_URI = "http://localhost"
 LOGIN_URL = "https://stackoverflow.com/users/login"
-OAUTH_URL = f"https://stackoverflow.com/oauth?client_id=27148&scope=read_inbox&redirect_uri={REDIRECT_URI}"
+OAUTH_URL = f"https://stackoverflow.com/oauth?client_id={CLIENT_ID}&scope=read_inbox&redirect_uri={REDIRECT_URI}"
 TOKEN_URL = "https://stackoverflow.com/oauth/access_token"
 date_str = datetime.now().strftime(
     "%Y-%m-%d"
