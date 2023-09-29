@@ -20,12 +20,12 @@ class MessageType(str, Enum):
 
 # Models
 class ChatInput(BaseModel):
-    username: str
+    username: Optional[str] = None
     message: str
     # memory: Optional[bool] = False
     # # memory_uuid: Optional[str] = None
     # context_uuids: Optional[List[str]] = None
-    # assistant_uuid: Optional[str] = None
+    assistant_uuid: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
