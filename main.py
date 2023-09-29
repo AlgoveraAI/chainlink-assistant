@@ -13,6 +13,7 @@ from fastapi import (
     WebSocketDisconnect,
     status,
     HTTPException,
+    Header,
 )
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from schemas import (
@@ -170,10 +171,15 @@ async def chat_endpoint_chainlink(
 )
 def search(
     job: SearchRequestSchema,
+    x_api_key: str = Header(None),
 ):
     """Search for documents."""
     global chainlink_search_retrevier
     global new_ingest, new_ingest_time
+
+    # Check API key
+    if x_api_key:
+        logger.info(f"Received x-api-key: {x_api_key}")
 
     # if search retriever is not loaded raise error
     if chainlink_search_retrevier is None:
