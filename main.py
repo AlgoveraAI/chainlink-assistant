@@ -55,14 +55,14 @@ def initial_setup():
         chainlink_search_retrevier = get_search_retriever()
     except Exception as err:
         chainlink_search_retrevier = None
-        logger.info("Search retriever not loaded: " + str(err))
+        logger.error("Search retriever not loaded: " + str(err))
 
     try:
         retriever, chain = get_retriever_chain()
     except Exception as err:
         retriever = None
         chain = None
-        logger.info("Retriever chain not loaded: " + str(err))
+        logger.error("Retriever chain not loaded: " + str(err))
 
     return chainlink_search_retrevier, retriever, chain
 
@@ -138,9 +138,9 @@ async def chat_endpoint_chainlink(
             logger.info("Getting answer without memory")
             try:
                 answer = await get_answer(message.message, manager=manager, retriever=retriever, base_chain=chain)
-                logger.info(answer)
+                logger.debug(answer)
             except Exception as err:
-                logger.info("Error getting answer: " + str(err))
+                logger.error("Error getting answer: " + str(err))
                 message = "OpenAI Error. There was an error getting an answer. Please try again."
                 await websocket.send_json({"error": message})
 
@@ -153,7 +153,7 @@ async def chat_endpoint_chainlink(
 
     except WebSocketDisconnect:
         await manager.disconnect(websocket)
-        logger.info(f"WebSocket disconnected")
+        logger.error(f"WebSocket disconnected")
 
 
 @app.post(
@@ -187,14 +187,14 @@ def search(
 
     logger.info("General Search")
     job_dict = job.dict()
-    logger.info(job_dict)
+    logger.debug(job_dict)
 
     # Get search results
     results = chainlink_search_retrevier.get_relevant_documents(
         query=job_dict["query"], type_=job_dict["type_"]
     )
     logger.info(f"Retrieved {len(results)} documents")
-    logger.info(results)
+    logger.debug(results)
 
     # Return results
     return SearchResponseSchema(results=results)
@@ -207,5 +207,5 @@ def refresh():
         chainlink_search_retrevier, retriever, chain = initial_setup()
         return {"message": "Refreshed."}
     except Exception as err:
-        logger.info("Refresh failed: " + str(err))
+        logger.error("Refresh failed: " + str(err))
         return {"message": "Refresh failed: " + str(err)}

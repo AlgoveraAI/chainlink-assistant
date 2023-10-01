@@ -18,7 +18,7 @@ model = "gpt-3.5-turbo"
 try:
     encoding = tiktoken.encoding_for_model(model)
 except KeyError:
-    logger.info(f"Encoding for model {model} not found. Using default encoding.")
+    logger.error(f"Encoding for model {model} not found. Using default encoding.")
     encoding = tiktoken.get_encoding("cl100k_base")
 
 
@@ -68,10 +68,10 @@ async def process_documents(question, chain, memory, max_tokens=14_000):
 
     # Modify question if memory is not empty
     if memory.chat_memory.messages:
-        logger.info(f"Processing documents for question: {question}")
+        logger.debug(f"Processing documents for question: {question}")
         chain.prompt = QUESTION_MODIFIER_PROMPT
         modified_question = chain.predict(question=question, history=memory.buffer)
-        logger.info(f"Modified question: {modified_question}")
+        logger.debug(f"Modified question: {modified_question}")
 
     else:
         modified_question = question
@@ -79,7 +79,7 @@ async def process_documents(question, chain, memory, max_tokens=14_000):
     # Use router to get workkflow to use
     chain.prompt = ROUTER_PROMPT
     workflow = chain.predict(question=modified_question)
-    logger.info(f"Using workflow: {workflow}")
+    logger.debug(f"Using workflow: {workflow}")
 
     # Get relevant documents
     documents = retriever.get_relevant_documents(modified_question, workflow=workflow)

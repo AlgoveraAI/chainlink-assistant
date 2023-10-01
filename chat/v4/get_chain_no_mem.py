@@ -24,7 +24,7 @@ model = "gpt-3.5-turbo"
 try:
     encoding = tiktoken.encoding_for_model(model)
 except KeyError:
-    logger.info(f"Encoding for model {model} not found. Using default encoding.")
+    logger.error(f"Encoding for model {model} not found. Using default encoding.")
     encoding = tiktoken.get_encoding("cl100k_base")
 
 

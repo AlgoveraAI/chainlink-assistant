@@ -21,13 +21,13 @@ except:
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
-logger.info("no mem chain.......")
+logger.debug("no mem chain.......")
 
 model = "gpt-3.5-turbo"
 try:
     encoding = tiktoken.encoding_for_model(model)
 except KeyError:
-    logger.info(f"Encoding for model {model} not found. Using default encoding.")
+    logger.error(f"Encoding for model {model} not found. Using default encoding.")
     encoding = tiktoken.get_encoding("cl100k_base")
 
 
@@ -89,7 +89,7 @@ def process_documents(question, chain, retriever, max_tokens=14_000):
         # logger.info(f"Calling LLM with {batch}")
         documents = [doc for doc in documents if doc not in used_docs]
         num_llm_calls += 1
-        logger.info(
+        logger.debug(
             f"LLM call {num_llm_calls} complete. {len(documents)} documents remaining."
         )
 

@@ -19,7 +19,7 @@ model = "gpt-3.5-turbo"
 try:
     encoding = tiktoken.encoding_for_model(model)
 except KeyError:
-    logger.info(f"Encoding for model {model} not found. Using default encoding.")
+    logger.error(f"Encoding for model {model} not found. Using default encoding.")
     encoding = tiktoken.get_encoding("cl100k_base")
 
 
@@ -69,7 +69,7 @@ async def process_documents(question, chain, memory, max_tokens=14_000):
     logger.info(f"Processing documents for question: {question}")
     chain.prompt = QUESTION_MODIFIER_PROMPT
     modified_question = chain.predict(question=question, history=memory.buffer)
-    logger.info(f"Modified question: {modified_question}")
+    logger.debug(f"Modified question: {modified_question}")
 
     documents = retriever.get_relevant_documents(modified_question)
     batches = []
@@ -80,7 +80,7 @@ async def process_documents(question, chain, memory, max_tokens=14_000):
         # logger.info(f"Calling LLM with {batch}")
         documents = [doc for doc in documents if doc not in used_docs]
         num_llm_calls += 1
-        logger.info(
+        logger.debug(
             f"Num LLM call required: {num_llm_calls}. {len(documents)} documents remaining."
         )
 
