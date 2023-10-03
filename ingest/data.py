@@ -49,18 +49,21 @@ def get_links(url):
 
     all_links = []
     for i in range(10):
-        if i == 0:
-            driver.get(url)
-            driver.implicitly_wait(7)
-            time.sleep(7)
+        try:
+            if i == 0:
+                driver.get(url)
+                driver.implicitly_wait(3)
+                time.sleep(3)
 
-        else:
-            driver.find_element(
-                by="xpath",
-                value="/html/body/div[1]/main/section[2]/div/div[2]/button[2]",
-            ).click()
-            driver.implicitly_wait(7)
-            time.sleep(7)
+            else:
+                driver.find_element(
+                    by="xpath",
+                    value="/html/body/div[1]/main/section[2]/div/div[2]/button[2]",
+                ).click()
+                driver.implicitly_wait(3)
+                time.sleep(3)
+        except Exception as e:
+            logger.error(e)
 
         soup = BeautifulSoup(driver.page_source, "html.parser")
         hrefs = filter_links(soup, filter_sub_url)
