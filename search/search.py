@@ -32,6 +32,7 @@ class SearchRetriever(BaseRetriever, BaseModel):
         "moonbeam",
     ]
     k_final: int = 20
+    priority_words : List[str] = []
 
     class Config:
         arbitrary_types_allowed = True
@@ -46,6 +47,7 @@ class SearchRetriever(BaseRetriever, BaseModel):
         chain_link_youtube_docs: List[Document],
         k_final: int = 20,
         logger: Any = None,
+        priority_words: List[str] = [],
         **kwargs: Any,
     ):
         # Remove duplicates from chainlink_docs
@@ -74,6 +76,7 @@ class SearchRetriever(BaseRetriever, BaseModel):
             all_docs_retriever=all_docs_ret,
             k_final=k_final,
             logger=logger,
+            priority_words=priority_words,
         )
 
     def get_relevant_documents(self, query: str, type_: str = "all") -> List[Document]:
@@ -89,8 +92,14 @@ class SearchRetriever(BaseRetriever, BaseModel):
                 ordered_texts = self.reorder_matched_texts_by_network(
                     query, matching_docs_for_pair
                 )
-                r_docs.extend([doc.metadata for doc in ordered_texts[:2]])
+                r_docs.extend([doc.metadata for doc in ordered_texts[:3]])
 
+            matching_docs_for_priority = self.find_texts_for_priority(query, self.data_retriever.docs)
+
+            if matching_docs_for_priority:
+                ordered_texts = self.reorder_matched_texts_by_network(query, matching_docs_for_priority)
+                r_docs.extend([doc.metadata for doc in ordered_texts[:3]])
+            
             # Add 5 from all docs if not already added to r_docs
             r_docs.extend(
                 [
@@ -164,3 +173,22 @@ class SearchRetriever(BaseRetriever, BaseModel):
 
     def aget_relevant_documents(self):
         raise NotImplementedError
+    
+    def find_texts_for_priority(self, query, docs):
+        matching_priority = self.extract_priority(query)
+
+        if not matching_priority:
+            return []
+
+        matching_docs = [
+            doc
+            for doc in docs
+            if any(word in doc.page_content.lower() for word in matching_priority)
+        ]
+
+        return matching_docs
+
+    def extract_priority(self, query):
+        query_lower = query.lower()
+        matches = [word for word in self.priority_words if word in query_lower]
+        return matches if matches else None
