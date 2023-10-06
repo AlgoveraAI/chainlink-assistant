@@ -57,7 +57,7 @@ def get_blog_urls():
     try:
         driver.maximize_window()
         driver.get(
-            "https://blog.chain.link/?s=&categories=&services=&tags=&sortby=newest"
+            "https://blog.chain.link/?s=&categories=32&services=&tags=&sortby=newest"
         )
         time.sleep(3)
         for i in range(200):
@@ -233,6 +233,8 @@ def scrap_blogs():
     global driver
     driver = get_driver()
     urls = get_blog_urls()
+
+    logger.info(f"Total number of blog urls: {len(urls)}")
 
     # Use concurrent.futures to parallelize the fetching of URLs
     with ProcessPoolExecutor(max_workers=MAX_THREADS) as executor:
