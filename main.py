@@ -27,7 +27,7 @@ from schemas import (
 from utils import get_websocket_manager, ConnectionManager, USERNAMES
 from chat.get_chain_no_mem import get_answer
 from chat.utils import get_search_retriever, get_retriever_chain
-from config import get_logger, WS_HOST, HTTP_HOST
+from config import get_logger
 
 ### Secure disabled for FastAPI issues with protected ws ###
 # Secure endpoints using a bearer token
@@ -87,15 +87,6 @@ app.add_middleware(
     expose_headers=["x-api-key"]
 )
 
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/chainlink")
-async def get_chainlink(request: Request):
-    return templates.TemplateResponse("chainlink.html", {"request": request, "ws_host": WS_HOST, "http_host": HTTP_HOST})
 
 @app.websocket("/chat_chainlink")
 async def chat_endpoint_chainlink(

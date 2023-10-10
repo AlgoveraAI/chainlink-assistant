@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /chainlink-assistant
 
-COPY ../templates /chainlink-assistant/templates
 COPY ../chat /chainlink-assistant/chat
 COPY ../search /chainlink-assistant/search
 COPY ../*.py /chainlink-assistant/
