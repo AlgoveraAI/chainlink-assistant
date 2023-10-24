@@ -18,7 +18,7 @@ from ingest.utils import (
 )
 
 logger = get_logger(__name__)
-driver = None
+driver = get_driver()
 
 
 def close_popup(driver):
@@ -229,6 +229,41 @@ def get_blog(soup):
         return None
 
 
+# def scrap_blogs():
+#     global driver
+#     driver = get_driver()
+#     urls = get_blog_urls()
+
+#     logger.info(f"Total number of blog urls: {len(urls)}")
+
+#     # Use concurrent.futures to parallelize the fetching of URLs
+#     with ProcessPoolExecutor(max_workers=MAX_THREADS) as executor:
+#         soups = list(tqdm(executor.map(fetch_url_content, urls), total=len(urls)))
+
+#     unsuccessful_urls = [url for url, soup in soups if not soup]
+#     successful_soups = [(url, soup) for url, soup in soups if soup]
+
+#     # Use concurrent.futures to parallelize the markdown conversion
+#     with ProcessPoolExecutor(max_workers=MAX_THREADS) as executor:
+#         blogs = list(
+#             tqdm(executor.map(get_blog, successful_soups), total=len(successful_soups))
+#         )
+
+#     # # with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+#     # #     blogs_documents = list(tqdm(executor.map(process_blog_entry, blogs), total=len(blogs)))
+
+#     # blogs_documents = [process_blog_entry(blog) for blog in tqdm(blogs, desc="Processing Blog Entries")]
+
+#     # Remove nones
+#     blogs_documents = [doc for doc in blogs if doc]
+
+#     with open(f"{DATA_DIR}/blog_documents.pkl", "wb") as f:
+#         pickle.dump(blogs_documents, f)
+
+#     logger.info(f"Scraped blog posts")
+
+#     return blogs_documents
+
 def scrap_blogs():
     global driver
     driver = get_driver()
@@ -236,25 +271,13 @@ def scrap_blogs():
 
     logger.info(f"Total number of blog urls: {len(urls)}")
 
-    # Use concurrent.futures to parallelize the fetching of URLs
-    with ProcessPoolExecutor(max_workers=MAX_THREADS) as executor:
-        soups = list(tqdm(executor.map(fetch_url_content, urls), total=len(urls)))
+    soups = [fetch_url_content(url) for url in tqdm(urls)]
 
     unsuccessful_urls = [url for url, soup in soups if not soup]
     successful_soups = [(url, soup) for url, soup in soups if soup]
 
-    # Use concurrent.futures to parallelize the markdown conversion
-    with ProcessPoolExecutor(max_workers=MAX_THREADS) as executor:
-        blogs = list(
-            tqdm(executor.map(get_blog, successful_soups), total=len(successful_soups))
-        )
+    blogs = [get_blog(soup) for soup in tqdm(successful_soups)]
 
-    # # with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
-    # #     blogs_documents = list(tqdm(executor.map(process_blog_entry, blogs), total=len(blogs)))
-
-    # blogs_documents = [process_blog_entry(blog) for blog in tqdm(blogs, desc="Processing Blog Entries")]
-
-    # Remove nones
     blogs_documents = [doc for doc in blogs if doc]
 
     with open(f"{DATA_DIR}/blog_documents.pkl", "wb") as f:
@@ -263,3 +286,4 @@ def scrap_blogs():
     logger.info(f"Scraped blog posts")
 
     return blogs_documents
+
