@@ -246,6 +246,11 @@ def get_streaming_chain(manager, chain, workflow):
 
 def get_search_retriever():
     folder = f"{ROOT_DIR}/data"
+
+    # Load priority_words
+    with open(f"{folder}/priority_words.pkl", "rb") as f:
+        priority_words = pickle.load(f)
+
     # Open blogs document
     with open(f"{folder}/blog_documents.pkl", "rb") as f:
         blog_documents = pickle.load(f)
@@ -274,6 +279,7 @@ def get_search_retriever():
         chain_link_youtube_docs=chain_link_youtube_documents,
         k_final=20,
         logger=logger,
+        priority_words=priority_words,
     )
 
     return chainlink_search_retrevier

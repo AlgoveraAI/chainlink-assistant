@@ -395,6 +395,17 @@ def scrap_chain_link() -> Tuple[List[Dict], List[Dict]]:
             # Update the tqdm progress bar
             progress_bar.update(1)
 
+    # remove deplicates
+    all_main_docs = list({doc.metadata["source"]: doc for doc in all_main_docs}.values())
+    all_you_tube_docs = list(
+        {doc.metadata["source"]: doc for doc in all_you_tube_docs}.values()
+    )
+
+    # remove https://chain.link/terms
+    all_main_docs = [
+        doc for doc in all_main_docs if doc.metadata["source"] != "https://chain.link/terms"
+    ]
+
     # Save to disk as pickle
     with open(f"{DATA_DIR}/chain_link_main_documents.pkl", "wb") as f:
         pickle.dump(all_main_docs, f)
