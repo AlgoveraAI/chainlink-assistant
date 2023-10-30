@@ -67,4 +67,5 @@ RUN pip install -r /chainlink-assistant/requirements.txt
 
 EXPOSE 8000
 
-CMD ["python", "ingest_script.py"]
+#CMD ["python", "ingest_script.py"]
+ENTRYPOINT ["tail", "-f", "/dev/null"]
